@@ -1,13 +1,17 @@
 name: Build and Test
 
 on:
-  push:
-    branches: [ "main" ]
   pull_request:
+  # Called by the Docker publish workflow, which will not push an image unless this
+  # passes. Pushes to main are covered that way rather than by a trigger here, so that
+  # the tests run exactly once per commit.
+  workflow_call:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout code
