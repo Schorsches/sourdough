@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SmartMaps layout 3D buildings check</title>
+<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+<style>
+  html, body { margin: 0; height: 100%; font: 13px system-ui, sans-serif; }
+  #map { position: absolute; inset: 0; }
+  #panel {
+    position: absolute; top: 10px; left: 10px; z-index: 1; background: #fff;
+    padding: 10px 12px; border-radius: 6px;
+    max-width: 320px; line-height: 1.45; box-shadow: 0 1px 4px rgba(0,0,0,.3);
+  }
+  #panel h1 { font-size: 14px; margin: 0 0 6px; }
+  #panel p { margin: 0 0 6px; color: #444; }
+  code { background: #f2f2f2; padding: 0 3px; border-radius: 3px; }
+  #readout { margin-top: 8px; padding-top: 8px; border-top: 1px solid #ddd; min-height: 3em; }
+</style>
+</head>
+<body>
+<div id="panel">
+  <h1>SmartMaps layout, 3D buildings</h1>
+  <p>
+    Checks that a <code>--schema smartmaps</code> archive renders:
+    <code>building</code> extrudes from <code>render_height</code> &middot; elevated parts
+    sit above ground on <code>render_min_height</code> &middot; parts are told apart from
+    outlines by <code>building:part</code>, in one layer.
+  </p>
+  <div id="readout">Click a building for its attributes.</div>
+</div>
+<div id="map"></div>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/pmtiles@3.0.6/dist/pmtiles.js"></script>
+<script>
+// Point this at a PMTiles archive built with --schema smartmaps.
+// For local checking:  npx serve .   (with the .pmtiles file alongside this page)
+const ARCHIVE = new URLSearchParams(location.search).get('pmtiles') || 'smartmaps.pmtiles';
+
+const protocol = new pmtiles.Protocol();
+maplibregl.addProtocol('pmtiles', protocol.tile);
+
+// render_height is present on almost every building here, because this layout has no
+// factual height field and estimation is on by default. A fallback still costs nothing.
+const FALLBACK_HEIGHT = 8;
+
+const map = new maplibregl.Map({
+  container: 'map',
+  hash: true,
+  pitch: 60,
+  zoom: 16,
+  style: {
+    version: 8,
+    sources: {
+      smartmaps: {
+        type: 'vector',
+        url: 'pmtiles://' + ARCHIVE,
+        // The tileset stops at 14; the client overzooms above that.
+        maxzoom: 14
+      }
+    },
+    layers: [
+      { id: 'background', type: 'background', paint: { 'background-color': '#e8e6e1' } },
+      {
+        // Ocean is in water_polygons as kind=ocean; this layout has no ocean layer.
+        id: 'water', type: 'fill', source: 'smartmaps', 'source-layer': 'water_polygons',
+        paint: { 'fill-color': '#a8c9e8' }
+      },
+      {
+        id: 'landcover', type: 'fill', source: 'smartmaps', 'source-layer': 'landcover',
+        paint: { 'fill-color': '#d6e0cc' }
+      },
+      {
+        id: 'landuse', type: 'fill', source: 'smartmaps', 'source-layer': 'landuse',
+        paint: { 'fill-color': '#dfe3d8' }
+      },
+      {
+        id: 'transport', type: 'line', source: 'smartmaps', 'source-layer': 'transport',
+        filter: ['!=', ['geometry-type'], 'Point'],
+        paint: {
+          'line-color': '#ffffff',
+          'line-width': ['interpolate', ['linear'], ['zoom'], 12, 0.5, 18, 6]
+        }
+      },
+      {
+        // Outlines and parts share one layer here, so one extrusion layer draws both.
+        // Parts are tinted, so you can see the merged model working.
+        id: 'buildings-3d',
+        type: 'fill-extrusion',
+        source: 'smartmaps',
+        'source-layer': 'building',
+        minzoom: 14,
+        paint: {
+          'fill-extrusion-height': ['coalesce', ['get', 'render_height'], FALLBACK_HEIGHT],
+          'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], 0],
+          'fill-extrusion-color': [
+            'case',
+            ['==', ['get', 'building:part'], true], '#b9a48f',
+            ['==', ['get', '3d'], true], '#bfc4c9',
+            '#d3cfc7'
+          ],
+          'fill-extrusion-opacity': 0.95
+        }
+      }
+    ]
+  }
+});
+
+map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }));
+
+// Exposed so an automated check can query what actually rendered.
+window.__map = map;
+map.on('idle', () => { window.__mapReady = true; });
+
+map.on('load', () => {
+  if (!location.hash) {
+    const bounds = map.getSource('smartmaps')?.bounds;
+    if (bounds) map.fitBounds(bounds, { pitch: 60, maxZoom: 17 });
+  }
+});
+
+const readout = document.getElementById('readout');
+map.on('click', (event) => {
+  const hits = map.queryRenderedFeatures(event.point, { layers: ['buildings-3d'] });
+  if (!hits.length) {
+    readout.textContent = 'No building here.';
+    return;
+  }
+  const props = hits[0].properties;
+  const rows = Object.entries(props)
+    .map(([k, v]) => `<div><code>${k}</code> = ${v} <i>(${typeof v})</i></div>`)
+    .join('');
+  readout.innerHTML = `<b>${hits[0].sourceLayer}</b>${rows}`;
+});
+</script>
+</body>
+</html>

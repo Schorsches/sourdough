@@ -40,6 +40,26 @@ With a separate layer:
 - a 3D renderer draws `building_parts` where they exist and can suppress the parent
   outline, which is what Simple 3D Buildings semantics call for.
 
+### Why SmartMaps merges parts and Shortbread does not
+
+The `smartmaps` schema does the opposite: parts share the `building` layer with their
+parent outlines, told apart by a `building:part` boolean. That is not an inconsistency —
+it follows from what each schema is for.
+
+`shortbread-1.1-3d` is an **extension to a published specification with existing styles**.
+Its constraint is that a style written for base Shortbread must render it unchanged, and a
+merged layer breaks that: every complex building draws twice. A separate layer is the only
+way to add parts without touching what already exists.
+
+The SmartMaps layout has **no base version to stay compatible with**. Its `building` layer
+carries `building:part` as a declared field, so a style written against it filters on that
+flag and expects to. There, the merged model *is* the target, and splitting it would be
+the incompatible choice.
+
+One consequence worth knowing when comparing feature counts: a polygon tagged both
+`building` and `building:part` is two features under `shortbread-1.1-3d` (one per layer)
+and one under `smartmaps`.
+
 ## Attributes
 
 All lengths are **numbers in meters**, never strings: `"12 m"` is not a value a renderer
