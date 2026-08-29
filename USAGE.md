@@ -104,6 +104,9 @@ slow enough to be worth running deliberately:
 # Prints tile-size distributions per zoom.
 mvn test -DexcludedTestGroups= -Dtest=ShortbreadIntegrationTest
 mvn test -DexcludedTestGroups= -Dtest=ShortbreadIntegrationTest -Dintegration.area=luxembourg
+# A city with dense Simple 3D Buildings data is the worst case for the 3D extension's
+# tile-size cost; see BUILDINGS_3D.md.
+mvn test -DexcludedTestGroups= -Dtest=ShortbreadIntegrationTest -Dintegration.area=berlin
 
 # Compare the tag selection against the Shortbread project's own taginfo.json.
 mvn test -DexcludedTestGroups= -Dtest=TaginfoDifferentialTest

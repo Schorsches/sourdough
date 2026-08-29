@@ -291,10 +291,13 @@ mvn test -DexcludedTestGroups= -Dtest=ShortbreadIntegrationTest -Dintegration.ar
 | Buildings | 260,034 | 260,034 | — |
 | Building parts | — | 142 | — |
 
-The 3D extension costs about 2% on the densest tile and a quarter of a percent overall.
-The largest tile stays well under the 1 MB size Planetiler warns at. A Monaco extract gave
-the same shape of answer (+2.1% on its largest zoom-14 tile), so the figure is not an
-artifact of one region.
+The largest tile stays well under the 1 MB size Planetiler warns at.
+
+The 3D extension's cost varies a great deal by how well a region is mapped in 3D. In
+Luxembourg it is a quarter of a percent overall and 2% on the densest tile; in Berlin,
+which has far denser Simple 3D Buildings coverage, it is 2.8% overall and 24% on the
+densest tile (210 kB to 260 kB). `BUILDINGS_3D.md` has the full comparison; plan for the
+Berlin figures.
 
 Building dimension counters from the Monaco run: 84 explicit heights, 485 derived from
 level counts, 4,120 buildings with no usable dimensions, 1 malformed level count. Note how
