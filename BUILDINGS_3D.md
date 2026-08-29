@@ -212,24 +212,73 @@ those tiles rather than requesting ones that do not exist.
 
 ## What it costs
 
-Measured on a Luxembourg extract (260,034 buildings), building both schemas from the same
-input:
+**The cost depends heavily on how well the region is mapped in 3D**, so one number would
+be misleading. Both schemas built from the same input, in two regions:
+
+Luxembourg — 260,034 buildings, 142 building parts:
 
 | | `shortbread-1.1` | `shortbread-1.1-3d` | delta |
 |---|---|---|---|
 | Archive | 29.0 MB | 29.1 MB | +0.25% |
-| Zoom-14 p95 tile | 42.7 kB | 42.9 kB | +0.5% |
-| Zoom-14 p99 tile | 83.6 kB | 84.5 kB | +1.1% |
-| Zoom-14 largest tile | 153.7 kB | 156.8 kB | **+2.0%** |
+| Zoom-14 p95 | 42.7 kB | 42.9 kB | +0.5% |
+| Zoom-14 p99 | 83.6 kB | 84.5 kB | +1.1% |
+| Zoom-14 largest | 153.7 kB | 156.8 kB | +2.0% |
 
-The densest tile is the number that matters, since that is the one a client waits for. Two
-percent is cheap enough that the appearance attributes — `building_colour`,
+Berlin — 1,246,487 buildings, 41,735 building parts, and among the best Simple 3D
+Buildings coverage anywhere in OpenStreetMap:
+
+| | `shortbread-1.1` | `shortbread-1.1-3d` | delta |
+|---|---|---|---|
+| Archive | 69.9 MB | 71.9 MB | +2.8% |
+| Zoom-14 p50 | 7.9 kB | 8.0 kB | +1.3% |
+| Zoom-14 p95 | 95.5 kB | 99.4 kB | +4.1% |
+| Zoom-14 p99 | 133.5 kB | 142.5 kB | +6.7% |
+| Zoom-14 largest | 210.2 kB | 260.4 kB | **+23.9%** |
+
+So: a fraction of a percent where 3D mapping is sparse, and up to a quarter more on the
+single densest tile where it is not. The largest tile measured anywhere is 260 kB, well
+inside the 1 MB size Planetiler warns at, and the median tile barely moves. Plan for the
+Berlin figures rather than the Luxembourg ones.
+
+That is affordable, so the appearance attributes — `building_colour`,
 `building_material`, `roof_colour`, `roof_material` — stay enabled by default rather than
-sitting behind a flag. They are sparse in OpenStreetMap, so they cost little in practice
-while being the difference between a grey city and a recognisable one.
+sitting behind a flag. They are sparse in OpenStreetMap, so they cost little while being
+the difference between a grey city and a recognisable one.
 
 If a future change pushes the zoom-14 figures materially higher, those four are the first
 candidates to drop; `height` and `min_height` are what the layer exists for.
+
+### How much 3D data actually exists
+
+From the same Berlin run, across 1,121,410 buildings read:
+
+| | |
+|---|---|
+| Explicit `height` | 14,375 (1.3%) |
+| Derived from `building:levels` | 259,808 (23.2%) |
+| No usable dimensions at all | 847,227 (75.5%) |
+| Building parts | 36,606 |
+
+Three quarters of buildings in one of the best-mapped cities in OpenStreetMap have no
+height information. That is the case for a client-side fallback, and against materialising
+an invented height onto every building.
+
+The same run exercised the malformed-data handling on real data rather than fixtures: 572
+`min_height` values at or above their building's height, 65 oversized roof heights, 35
+unparseable heights and 16 bad level counts, all dropped or corrected, with the build
+completing normally.
+
+### Building parts and their parent outline
+
+A 3D renderer drawing parts wants to suppress the parent building outline. Simple 3D
+Buildings defines a `type=building` relation that ties the two together, which would give
+an exact answer without any spatial test.
+
+Measured on Berlin, **only 16% of building parts (5,843 of 36,606) belong to such a
+relation**; the rest are plain overlapping ways. A client therefore has to implement the
+geometric approach regardless, and once it has, an attribute covering a sixth of cases
+saves it nothing. No parent id is emitted, and no relation pass is carried on planet
+builds for it.
 
 ## Licensing
 
