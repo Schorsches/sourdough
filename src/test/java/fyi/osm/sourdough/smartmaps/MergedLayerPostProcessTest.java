@@ -21,6 +21,9 @@ import org.locationtech.jts.geom.Geometry;
  * quietly dropped them would delete every station and every pedestrian square from the
  * tileset, and nothing else in the suite would notice -- the layer would still be present
  * and still be well-formed.
+ *
+ * Whether each layer HAS post-processing is a separate question, checked across both
+ * schemas by {@code LayerPostProcessingTest}.
  */
 class MergedLayerPostProcessTest {
 
@@ -55,32 +58,6 @@ class MergedLayerPostProcessTest {
       List.of(1L, 2L, 3L),
       merged.stream().map(VectorTile.Feature::id).sorted().toList()
     );
-  }
-
-  /**
-   * A handler declares one layer name, and Planetiler keys post-processors by it. Every
-   * secondary layer a handler writes into therefore needs its treatment registered
-   * explicitly, or it gets none: no error, no missing layer, just unmerged geometry.
-   * `landcover` is written by the `landuse` handler and did exactly that.
-   */
-  @Test
-  void everyLayerThatShouldMergeIsActuallyPostProcessedByTheProfile() throws GeometryException {
-    var profile = new SmartMapsProfile(CONFIG);
-    // Two polygons that touch: a merge combines them, no merge leaves both.
-    var touching = List.of(
-      feature(SmartMapsSchema.LANDCOVER, TestUtils.rectangle(0, 0, 10, 10), 1),
-      feature(SmartMapsSchema.LANDCOVER, TestUtils.rectangle(10, 0, 20, 10), 2)
-    );
-    for (var layer : List.of(SmartMapsSchema.LANDCOVER, SmartMapsSchema.LANDUSE)) {
-      var items = touching.stream()
-        .map(f -> new VectorTile.Feature(layer, f.id(), f.geometry(), f.tags()))
-        .toList();
-      assertEquals(
-        1,
-        profile.postProcessLayerFeatures(layer, 14, items).size(),
-        layer + " is not being post-processed by the profile"
-      );
-    }
   }
 
   @Test

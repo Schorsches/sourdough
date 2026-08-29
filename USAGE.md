@@ -1,5 +1,9 @@
 # Usage
 
+This guide is the reference for what each option does. For a step-by-step walkthrough —
+pick a region, build it in any of the four schemas, look at the result — see
+**[RUNNING.md](./RUNNING.md)**.
+
 This guide covers how to generate your own Sourdough vector tiles and deploy them.
 
 You will need:
