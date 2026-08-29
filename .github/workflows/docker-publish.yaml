@@ -12,7 +12,12 @@ env:
   IMAGE_NAME: jake-low/sourdough-builder
 
 jobs:
+  # Gate: no image is published unless the test suite passes on this commit.
+  test:
+    uses: ./.github/workflows/ci.yaml
+
   build:
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read

@@ -121,6 +121,10 @@ const map = new maplibregl.Map({
 
 map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }));
 
+// Exposed so an automated check can query what actually rendered.
+window.__map = map;
+map.on('idle', () => { window.__mapReady = true; });
+
 map.on('load', () => {
   // Center on wherever the data actually is, unless the URL hash already says.
   if (!location.hash) {

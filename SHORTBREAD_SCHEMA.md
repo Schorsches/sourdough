@@ -32,19 +32,33 @@ not silently change what this code targets: the revision is recorded in
 
 ## How the schema is described in code
 
+Two layers of checking, both automatic.
+
 `src/main/java/fyi/osm/sourdough/shortbread/ShortbreadSchema.java` holds a declarative
 table of all 26 layers: geometry type, minimum zoom, and every attribute with its type.
-That table is the single source of truth. `ShortbreadConformanceTest` drives the whole
-profile over a fixture corpus and checks each emitted feature against it, so the schema
-is stated once rather than in code, tests and prose separately.
+`ShortbreadConformanceTest` drives the whole profile over a fixture corpus and checks each
+emitted feature against it, so the schema is stated once rather than in code, tests and
+prose separately.
+
+Above that, **the specification document itself is vendored** at the pinned revision, in
+`src/test/resources/shortbread/shortbread-1.1.md`. `SpecConformanceTest` parses its
+Features tables, and for every row builds a feature carrying the OSM tags that row names,
+runs the profile over it, and checks the layer emits the `kind` and the zoom the row
+specifies. Around 130 rows are exercised this way, plus the 137-entry POI list and the
+layer inventory.
+
+That matters because a hand-written test can be wrong in exactly the same way the
+implementation is. Checking against the document removes one opportunity for that.
 
 ### Adopting a future Shortbread version
 
-1. Diff the new `1.x.md` against the pinned revision above.
-2. Update `ShortbreadSchema` (layer list, attributes, zooms) and re-pin the revision.
-3. Run `mvn test`. The conformance test now fails wherever the implementation has not
-   caught up, which is the to-do list.
-4. Add a new value to the `Schema` enum (`shortbread-1.2`) so that the older schema stays
+1. Replace `src/test/resources/shortbread/shortbread-1.1.md` with the new revision and
+   re-pin the commit in `ShortbreadSchema`.
+2. Run `mvn test`. `SpecConformanceTest` now names every kind and zoom that moved, and
+   `ShortbreadConformanceTest` names every layer or attribute that changed shape. That is
+   the to-do list, derived rather than guessed.
+3. Implement, and update `ShortbreadSchema` for any new layers or attributes.
+4. Add a new value to the `Schema` enum (`shortbread-1.2`) so the older schema stays
    available to anyone who needs it.
 
 Shortbread's [versioning policy][versioning] guarantees that a style written for X.Y
@@ -259,22 +273,33 @@ every `place=island`, which the schema lists as a feature in its own right.
 
 ## Measured output
 
-From a Monaco extract, built with both schemas on the same input (`mvn test
--DexcludedTestGroups= -Dtest=ShortbreadIntegrationTest` reproduces these):
+Both schemas built from the same Luxembourg extract, which is large enough to be
+representative: 260,034 buildings across cities, forest, motorway, rail and border.
+Reproduce with:
 
-| | `shortbread-1.1` | `shortbread-1.1-3d` |
-|---|---|---|
-| Archive | 960.2 kB | 965.7 kB (+0.6%) |
-| Largest zoom-14 tile | 115.6 kB | 118.0 kB (**+2.1%**) |
-| Buildings | 5,221 | 5,221 |
-| Building parts | — | 62 |
+```bash
+mvn test -DexcludedTestGroups= -Dtest=ShortbreadIntegrationTest -Dintegration.area=luxembourg
+```
 
-The archive-wide figure is diluted by a large number of near-empty ocean tiles, so the
-largest zoom-14 tile is the honest measure of what the 3D extension costs: about 2 kB on
-the densest tile in a building-dense city.
+| | `shortbread-1.1` | `shortbread-1.1-3d` | delta |
+|---|---|---|---|
+| Archive | 29.0 MB | 29.1 MB | +0.25% |
+| Zoom-14 p50 | 10.8 kB | 10.8 kB | — |
+| Zoom-14 p95 | 42.7 kB | 42.9 kB | +0.5% |
+| Zoom-14 p99 | 83.6 kB | 84.5 kB | +1.1% |
+| Zoom-14 max | 153.7 kB | 156.8 kB | **+2.0%** |
+| Buildings | 260,034 | 260,034 | — |
+| Building parts | — | 142 | — |
 
-Building dimension counters from the same run: 84 explicit heights, 485 derived from
-level counts, 4,120 buildings with no usable dimensions, 1 malformed level count.
+The 3D extension costs about 2% on the densest tile and a quarter of a percent overall.
+The largest tile stays well under the 1 MB size Planetiler warns at. A Monaco extract gave
+the same shape of answer (+2.1% on its largest zoom-14 tile), so the figure is not an
+artifact of one region.
+
+Building dimension counters from the Monaco run: 84 explicit heights, 485 derived from
+level counts, 4,120 buildings with no usable dimensions, 1 malformed level count. Note how
+few buildings carry any dimension data at all, which is why no height is invented for the
+rest.
 
 ## Licensing
 

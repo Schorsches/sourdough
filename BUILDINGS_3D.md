@@ -210,6 +210,27 @@ ignores them.
 Because the tileset stops at zoom 14, set `maxzoom` on the source so the client overzooms
 those tiles rather than requesting ones that do not exist.
 
+## What it costs
+
+Measured on a Luxembourg extract (260,034 buildings), building both schemas from the same
+input:
+
+| | `shortbread-1.1` | `shortbread-1.1-3d` | delta |
+|---|---|---|---|
+| Archive | 29.0 MB | 29.1 MB | +0.25% |
+| Zoom-14 p95 tile | 42.7 kB | 42.9 kB | +0.5% |
+| Zoom-14 p99 tile | 83.6 kB | 84.5 kB | +1.1% |
+| Zoom-14 largest tile | 153.7 kB | 156.8 kB | **+2.0%** |
+
+The densest tile is the number that matters, since that is the one a client waits for. Two
+percent is cheap enough that the appearance attributes — `building_colour`,
+`building_material`, `roof_colour`, `roof_material` — stay enabled by default rather than
+sitting behind a flag. They are sparse in OpenStreetMap, so they cost little in practice
+while being the difference between a grey city and a recognisable one.
+
+If a future change pushes the zoom-14 figures materially higher, those four are the first
+candidates to drop; `height` and `min_height` are what the layer exists for.
+
 ## Licensing
 
 This extension is part of this repository and is dedicated to the public domain under CC0,
