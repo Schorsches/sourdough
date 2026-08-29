@@ -85,10 +85,7 @@ public class AttributeProcessor {
 
   private static String getValue(SourceFeature sf, String key, Configuration config) {
     if (config.hasLanguage() && Constants.LOCALIZABLE_NAME_KEYS.contains(key)) {
-      String localizedName = sf.getString(key + ":" + config.language());
-      if (localizedName != null) {
-        return localizedName;
-      }
+      return Names.preferLanguage(sf, key, config.language());
     }
     return sf.getString(key);
   }
