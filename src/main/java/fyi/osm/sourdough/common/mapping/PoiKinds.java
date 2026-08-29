@@ -1,4 +1,4 @@
-package fyi.osm.sourdough.shortbread.mapping;
+package fyi.osm.sourdough.common.mapping;
 
 import com.onthegomap.planetiler.reader.WithTags;
 import java.util.LinkedHashMap;

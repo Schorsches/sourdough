@@ -1,4 +1,4 @@
-package fyi.osm.sourdough.shortbread.mapping;
+package fyi.osm.sourdough.common.mapping;
 
 import com.onthegomap.planetiler.reader.WithTags;
 import java.util.LinkedHashMap;
@@ -96,6 +96,19 @@ public final class LandKinds {
   public static List<String> valuesFor(String key) {
     var values = BY_KEY.get(key);
     return values == null ? List.of() : List.copyOf(values.keySet());
+  }
+
+  /**
+   * Every `kind` this table can produce. Distinct from the tag values: `natural=wood` and
+   * `landuse=forest` are both `forest`. Exposed so that a schema splitting these kinds
+   * across layers can be checked for naming a kind that does not exist.
+   */
+  public static List<String> kinds() {
+    return BY_KEY.values().stream()
+      .flatMap(values -> values.values().stream())
+      .map(Land::kind)
+      .distinct()
+      .toList();
   }
 
   /** The land classification of a feature, or null if it is not land cover. */

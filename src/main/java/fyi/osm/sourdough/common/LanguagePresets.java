@@ -6,12 +6,13 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Named language lists for Shortbread's `name_xx` attributes.
+ * Named language lists for the schemas that carry per-language name attributes.
  *
- * Shortbread 1.1 leaves the set of languages up to the implementation, and every extra
+ * Neither Shortbread nor the SmartMaps layout fixes the set of languages, and every extra
  * language is another string attribute on every named label feature, so the default is
  * empty. A preset exists so that operators who do want a broad multilingual tileset do
- * not have to type out several dozen codes.
+ * not have to type out several dozen codes. How the codes are spelled is each schema's
+ * business: Shortbread writes `name_de`, SmartMaps writes both `name:de` and `name_de`.
  */
 public final class LanguagePresets {
 

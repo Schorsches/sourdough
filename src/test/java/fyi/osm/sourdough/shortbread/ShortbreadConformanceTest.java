@@ -11,6 +11,7 @@ import com.onthegomap.planetiler.reader.SourceFeature;
 import com.onthegomap.planetiler.stats.Stats;
 import fyi.osm.sourdough.Schema;
 import fyi.osm.sourdough.TestSupport;
+import fyi.osm.sourdough.common.BoundaryRelations;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -58,7 +59,7 @@ class ShortbreadConformanceTest {
         List.of(
           new com.onthegomap.planetiler.reader.osm.OsmReader.RelationMember<>(
             "outer",
-            new fyi.osm.sourdough.shortbread.layers.Boundaries.BoundaryRelation(1, 2, false)
+            new fyi.osm.sourdough.common.BoundaryRelations.BoundaryRelation(1, 2, false)
           )
         )
       )

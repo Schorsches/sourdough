@@ -1,4 +1,4 @@
-package fyi.osm.sourdough.shortbread.mapping;
+package fyi.osm.sourdough.common.mapping;
 
 import com.onthegomap.planetiler.reader.WithTags;
 import java.util.LinkedHashMap;
@@ -101,6 +101,17 @@ public final class StreetKinds {
 
   public static List<String> railwayValues() {
     return List.copyOf(RAILWAY.keySet());
+  }
+
+  /**
+   * Classifies a bare road or rail class name. Needed where the class does not sit in the
+   * tag that normally carries it: a way under construction is `highway=construction` and
+   * names the class it will become in `construction` instead.
+   */
+  public static Street byClassName(String value) {
+    if (value == null) return null;
+    var street = HIGHWAY.get(value);
+    return street != null ? street : RAILWAY.get(value);
   }
 
   /** Classifies a way, or returns null if it is not part of the street network. */

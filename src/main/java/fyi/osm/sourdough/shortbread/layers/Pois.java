@@ -7,7 +7,7 @@ import fyi.osm.sourdough.shortbread.ShortbreadConfiguration;
 import fyi.osm.sourdough.shortbread.ShortbreadLayer;
 import fyi.osm.sourdough.shortbread.ShortbreadNames;
 import fyi.osm.sourdough.shortbread.ShortbreadSchema;
-import fyi.osm.sourdough.shortbread.mapping.PoiKinds;
+import fyi.osm.sourdough.common.mapping.PoiKinds;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
