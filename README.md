@@ -20,7 +20,9 @@ These goals come with some trade-offs:
 
 ## Getting started
 
-There is currently no hosted service providing Sourdough tiles, so you'll need to generate and serve them yourself. For a state or small country, you can probably generate tiles on your own computer in just a few minutes. If you're building tiles for the whole planet, it'll take several hours, and you'll need >1TB of SSD storage and >64GB of RAM, so you may want to rent a virtual machine from your favorite cloud provider. See [USAGE.md](./USAGE.md) for detailed guidance.
+There is currently no hosted service providing Sourdough tiles, so you'll need to generate and serve them yourself. For a state or small country, you can probably generate tiles on your own computer in just a few minutes. If you're building tiles for the whole planet, it'll take several hours, and you'll need >1TB of SSD storage and >64GB of RAM, so you may want to rent a virtual machine from your favorite cloud provider.
+
+**[RUNNING.md](./RUNNING.md) is the step-by-step walkthrough** — picking a region, building any of the four schemas, and viewing the result. [USAGE.md](./USAGE.md) is the reference for what every flag does.
 
 As a quick overview, here's how to build tiles for a small region:
 
