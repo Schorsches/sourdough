@@ -48,6 +48,53 @@ java -jar target/sourdough-builder-HEAD-with-deps.jar \
 
    This is independent of the `--language` option: `--language` controls which language fills the singular `name` attribute, while `--additional-languages` adds extra per-language attributes. Use `--additional-languages` when you want a multilingual tileset whose display language can be switched at runtime by the stylesheet (similar to [OpenStreetMap Americana](https://americanamap.org/)). Note that including lots of languages increases the tile size.
 
+### Choosing a tile schema
+
+- `--schema <name>` - Which tile schema to generate. One of:
+
+  | Value | Schema | Max zoom |
+  |---|---|---|
+  | `sourdough` (default) | The Sourdough schema described in [SCHEMA.md](./SCHEMA.md) | 15 |
+  | `shortbread-1.1` | [Shortbread 1.1](./SHORTBREAD_SCHEMA.md), exactly as specified | 14 |
+  | `shortbread-1.1-3d` | Shortbread 1.1 plus the [3D buildings extension](./BUILDINGS_3D.md) | 14 |
+
+  Omitting `--schema` builds Sourdough exactly as before.
+
+  Shortbread fixes its tileset zoom range at 0-14 and expects clients to overzoom the
+  zoom-14 tiles for higher zoom levels, which MapLibre does automatically. The Shortbread
+  schemas therefore default to `--maxzoom 14` and **reject** a `--maxzoom` above 14, rather
+  than building an archive that claims to be Shortbread and is not.
+
+### Languages in the Shortbread schemas
+
+Shortbread emits language variants as `name_xx` attributes (rather than Sourdough's
+`name:xx`), and leaves the choice of languages to the implementation. **No language
+attributes are emitted unless you ask for them**, because every extra language is another
+string attribute on every named label feature.
+
+```bash
+# an explicit list
+--additional-languages fr,de,es
+
+# or a preset: 43 codes covering the official EU languages, several widely used
+# non-Latin-script languages, and Latin transliterations of those
+--additional-languages smartmaps
+```
+
+`--language`, which rewrites `name` itself, applies to Sourdough only. Shortbread defines
+`name` as the OSM `name` tag, so passing `--language` alongside a Shortbread schema logs a
+warning and has no effect.
+
+## Running the tests
+
+```bash
+mvn test
+```
+
+This runs the unit, layer and schema-conformance suites. The conformance test checks
+generated features against the declarative schema table in `ShortbreadSchema.java`:
+layer names, geometry types, attribute names and types, and zoom ranges.
+
 ## Deploying and serving tiles
 
 Once you've generated a `.pmtiles` file, you need to host it somewhere so that a client (like a web browser or mobile app) can fetch the tiles it needs to display your map.
