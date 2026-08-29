@@ -192,10 +192,89 @@ processes anything twice.
 
 ## Comparison with other implementations
 
+Two other Shortbread producers were read as cross-checks. Both predate 1.1, so neither can
+validate the 1.1 additions, but both were useful for checking the much larger part of the
+schema that 1.0 and 1.1 share.
+
 `shortbread-tilemaker`, the project's own reference implementation, still declares
-`"version": "1.0"` and does not implement the 1.1 changes (no `motorcar` or `foot`, no
-access normalization, and the older `pois` selection). Differential comparison against it
-is therefore only meaningful on the parts of the schema that 1.0 and 1.1 share.
+`"version": "1.0"` and does not implement the 1.1 changes: no `motorcar` or `foot`, no
+access normalization, and the older `pois` selection.
+
+Planetiler ships a Shortbread definition of its own at
+`planetiler-custommap/src/main/resources/samples/shortbread.yml`. It is also 1.0-era: no
+`motorcar`, no `waterway=drain`, and hardcoded `name_en`/`name_de` attributes rather than
+the generic `name_xx` mechanism 1.1 introduced. It is not usable as a dependency in any
+case, since `planetiler-custommap` is not published to Maven Central.
+
+Reading it confirmed a number of choices made here — the hectare unit for
+`boundary_labels.way_area`, the boundary-label area thresholds, every `street_labels`
+minimum zoom, and the approach of deduplicating addresses by testing whether the feature
+is a POI. It also turned up three places where the two implementations differ.
+
+### Where this implementation differs from Planetiler's sample
+
+**Railway service tracks.** The specification says railways are available "with `service`
+on zoom level 10+, other ways on zoom level 8+" — that is, minor service tracks appear
+*later* than main lines. Planetiler's sample has this inverted, placing ways with a
+`service` tag at zoom 8 and ways without one at zoom 10. This implementation follows the
+specification: a service track appears at zoom 10, a main line at zoom 8. There is a test
+covering the direction.
+
+**The `dummy` property.** Planetiler's `buildings` layer emits no attributes at all. The
+specification says the layer has one property, `dummy`, always `1`, so that is emitted
+here — an existing style may rely on it.
+
+**Boundary relations.** Planetiler's sample reads `admin_level` straight off the way and
+carries `TODO` comments for both relation handling and the relation-derived half of
+`disputed`. This implementation uses a Planetiler relation preprocessor to apply the full
+1.1 rules: lowest admin_level across parents, and `disputed` from either the way's own tag
+or a qualifying parent relation.
+
+### Cross-check against the project's own taginfo
+
+`shortbread-docs` publishes `taginfo.json`, a machine-readable list of every OSM tag the
+schema consumes. A copy pinned at the same revision is vendored into
+`src/test/resources/shortbread/`, and `TaginfoDifferentialTest` compares it against this
+implementation's mapping tables. That is a stronger check on the 137-entry POI table and
+the 43-entry land table than re-reading the prose.
+
+The published file is itself stale — its `data_updated` field reads 2023-02-22 and its
+contents describe Shortbread 1.0, so it does not reflect the released 1.1 specification it
+sits alongside. The test allows for exactly the 1.0-to-1.1 delta and fails on anything
+else, which turned up two defects in the file:
+
+| taginfo says | The specification says | This implementation |
+|---|---|---|
+| `historic=artwork` | `tourism=artwork` (1.1.md line 851) | follows the specification |
+| `landuse=plant_nursery` + a stray backtick | `landuse=plant_nursery` | follows the specification |
+
+The test asserts that both defects are still present upstream, so that if they are fixed
+the allowance is removed rather than quietly masking a future real difference.
+
+One further difference is a judgment call rather than a correction. Planetiler includes
+only OSM *nodes* in `place_labels`; this implementation also represents place *areas* by a
+point. The specification says the layer "holds label points", which describes the output
+geometry rather than restricting the input, and reading it as nodes-only would drop nearly
+every `place=island`, which the schema lists as a feature in its own right.
+
+## Measured output
+
+From a Monaco extract, built with both schemas on the same input (`mvn test
+-DexcludedTestGroups= -Dtest=ShortbreadIntegrationTest` reproduces these):
+
+| | `shortbread-1.1` | `shortbread-1.1-3d` |
+|---|---|---|
+| Archive | 960.2 kB | 965.7 kB (+0.6%) |
+| Largest zoom-14 tile | 115.6 kB | 118.0 kB (**+2.1%**) |
+| Buildings | 5,221 | 5,221 |
+| Building parts | — | 62 |
+
+The archive-wide figure is diluted by a large number of near-empty ocean tiles, so the
+largest zoom-14 tile is the honest measure of what the 3D extension costs: about 2 kB on
+the densest tile in a building-dense city.
+
+Building dimension counters from the same run: 84 explicit heights, 485 derived from
+level counts, 4,120 buildings with no usable dimensions, 1 malformed level count.
 
 ## Licensing
 
