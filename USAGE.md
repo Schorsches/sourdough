@@ -85,6 +85,15 @@ string attribute on every named label feature.
 `name` as the OSM `name` tag, so passing `--language` alongside a Shortbread schema logs a
 warning and has no effect.
 
+### 3D buildings options
+
+- `--estimate-missing-heights <true|false>` - Three quarters of OpenStreetMap buildings
+  have neither a height nor a level count. By default the `shortbread-1.1-3d` schema gives
+  those a height estimated from their building type, so they can still be drawn; every
+  estimated value is marked `height_estimated=true`. Set this to `false` to emit a height
+  only where OpenStreetMap actually provides one. See
+  [BUILDINGS_3D.md](./BUILDINGS_3D.md).
+
 ## Running the tests
 
 ```bash

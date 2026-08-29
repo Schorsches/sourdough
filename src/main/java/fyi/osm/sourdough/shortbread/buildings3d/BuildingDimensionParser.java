@@ -15,14 +15,25 @@ import com.onthegomap.planetiler.util.Parse;
  * describes a portion *inside* that total and is never added to it. Adding them would
  * double-count the roof, so a building tagged height=14 + roof:height=2 is 14 m tall,
  * not 16.
+ *
+ * Heights are taken from the best source available, in order: an explicit tag, a level
+ * count, or an estimate from the building type. Only the first is measurement; the other
+ * two are marked `height_estimated` so a consumer can tell them apart, and the type-based
+ * estimate can be turned off entirely.
  */
 public final class BuildingDimensionParser {
 
   private final double levelHeight;
+  private final boolean estimateMissingHeights;
   private final BuildingMetrics metrics;
 
-  public BuildingDimensionParser(double levelHeight, BuildingMetrics metrics) {
+  public BuildingDimensionParser(
+    double levelHeight,
+    boolean estimateMissingHeights,
+    BuildingMetrics metrics
+  ) {
     this.levelHeight = levelHeight;
+    this.estimateMissingHeights = estimateMissingHeights;
     this.metrics = metrics;
   }
 
@@ -74,9 +85,15 @@ public final class BuildingDimensionParser {
       total = facade + (roofHeight == null ? 0 : roofHeight);
       estimated = true;
       metrics.increment(BuildingMetrics.HEIGHT_FROM_LEVELS);
+    } else if (estimateMissingHeights) {
+      // Nothing about this building's dimensions is mapped, which is the common case.
+      // Fall back to a typical storey count for its type so that it can still be drawn.
+      double assumedLevels = BuildingTypeDefaults.levelsFor(buildingType(sf));
+      roofHeight = taggedRoofHeight;
+      total = assumedLevels * levelHeight + (roofHeight == null ? 0 : roofHeight);
+      estimated = true;
+      metrics.increment(BuildingMetrics.HEIGHT_FROM_TYPE);
     } else {
-      // No usable dimensions. Emit nothing and let the client decide on a fallback,
-      // rather than inventing a height that would look like source data.
       total = null;
       roofHeight = null;
       estimated = false;
@@ -125,6 +142,13 @@ public final class BuildingDimensionParser {
       metrics.increment(BuildingMetrics.ROOF_HEIGHT_INVALID);
     }
     return null;
+  }
+
+  /** The building type an estimate is based on: a part's own type, else the building's. */
+  private static String buildingType(WithTags sf) {
+    var part = sf.getString("building:part");
+    if (part != null && !part.equals("yes") && !part.equals("no")) return part;
+    return sf.getString("building");
   }
 
   private static String first(WithTags sf, String... keys) {

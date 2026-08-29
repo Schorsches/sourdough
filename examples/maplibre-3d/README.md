@@ -27,24 +27,27 @@ Click any building to see its attributes and their JavaScript types.
 
 ## What this check has shown
 
-Run against a Luxembourg extract, centred on Luxembourg City at zoom 16 with a 60 degree
-pitch, in headless Chromium:
+Run against a Berlin extract, centred near the Brandenburg Gate at zoom 16 with a 60
+degree pitch, in headless Chromium:
 
 | | |
 |---|---|
-| Buildings rendered in view | 1,843 |
-| Building parts rendered | 17 |
-| Carrying a numeric `height` | 357 (JavaScript type `number`, not `string`) |
-| Sample heights | 15, 9, 9, 9, 9 metres |
-| Marked `height_estimated` | 350 of those 357 |
-| No height in OpenStreetMap | 1,486, all still drawn at the client's fallback |
-| At zoom 18, above the tileset maximum | 286 buildings still rendered from overzoomed zoom-14 tiles |
+| Buildings rendered in view | 767 |
+| Carrying a numeric `height` | 767 — all of them, JavaScript type `number` |
+| Marked `height_estimated` | 746 |
+| Building parts rendered | 212 |
+| Parts with a numeric `min_height` | yes, samples 23, 23, 18 and 2.5 metres |
+| Roof shapes present | flat, gabled, hipped, gambrel, quadruple_saltbox |
+| Sample heights | 12, 24, 18, 27, 6, 24 metres |
 
-That last row is the one worth keeping in mind: the tileset stops at zoom 14 and the
-client overzooms, so there is no need to build higher zoom levels.
+Only 21 of those 767 buildings carry a height that anyone measured; the rest are derived
+from a level count or estimated from the building type, which is what
+`height_estimated` marks. On an earlier Luxembourg run, 1,486 of 1,843 buildings in view
+had no height at all and relied on the client's fallback — the type-based estimate is what
+changed that.
 
-Note how few buildings carry a height at all, and that almost every height that exists is
-derived from a level count rather than measured. That is what the OpenStreetMap data looks
-like, and it is why no height is invented for the rest.
+An earlier run also confirmed overzooming: at zoom 18, above the tileset maximum of 14,
+286 buildings still rendered from overzoomed zoom-14 tiles. There is no need to build
+higher zoom levels.
 
 The page exposes the map as `window.__map`, which is what makes this check possible.

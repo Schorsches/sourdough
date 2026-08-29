@@ -24,7 +24,14 @@ class BuildingDimensionParserTest {
   @BeforeEach
   void setUp() {
     metrics = new BuildingMetrics();
-    parser = new BuildingDimensionParser(LEVEL_HEIGHT, metrics);
+    // Most cases here are about reading tagged dimensions, so the type-based estimate is
+    // off by default and switched on explicitly by the tests that cover it.
+    parser = new BuildingDimensionParser(LEVEL_HEIGHT, false, metrics);
+  }
+
+  private BuildingDimensions parseEstimating(String... keyValues) {
+    parser = new BuildingDimensionParser(LEVEL_HEIGHT, true, metrics);
+    return parse(keyValues);
   }
 
   private BuildingDimensions parse(String... keyValues) {
@@ -40,12 +47,99 @@ class BuildingDimensionParserTest {
   }
 
   @Test
-  void buildingWithNoDimensionsGetsNoHeight() {
+  void buildingWithNoDimensionsGetsNoHeightWhenEstimatesAreOff() {
     var dimensions = parse("building", "yes");
     assertNull(dimensions.height());
     assertNull(dimensions.minHeight());
     assertFalse(dimensions.estimated());
     assertEquals(1, metrics.get(BuildingMetrics.HEIGHT_ABSENT));
+  }
+
+  // --- estimates from the building type ------------------------------------
+
+  @Test
+  void aBuildingWithNoDimensionsIsEstimatedFromItsType() {
+    var dimensions = parseEstimating("building", "yes");
+    // building=yes says nothing, so the global fallback of two storeys applies.
+    assertEquals(6.0, dimensions.height());
+    assertTrue(dimensions.estimated());
+    assertEquals(1, metrics.get(BuildingMetrics.HEIGHT_FROM_TYPE));
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "garage, 3.0",
+    "shed, 3.0",
+    "house, 6.0",
+    "detached, 6.0",
+    "retail, 9.0",
+    "apartments, 12.0",
+    "office, 12.0",
+    "cathedral, 18.0"
+  })
+  void buildingTypesGetTheirOwnEstimate(String type, double expected) {
+    assertEquals(expected, parseEstimating("building", type).height());
+  }
+
+  @Test
+  void anUnknownBuildingTypeFallsBackToTheGlobalDefault() {
+    assertEquals(
+      BuildingTypeDefaults.DEFAULT_LEVELS * LEVEL_HEIGHT,
+      parseEstimating("building", "something_nobody_has_mapped_before").height()
+    );
+  }
+
+  @Test
+  void anEstimateCarriesNoLevelCount() {
+    // A consumer tells a level-derived height from a type-derived one by whether
+    // building_levels is there, so an estimate must not invent one.
+    var dimensions = parseEstimating("building", "house");
+    assertTrue(dimensions.estimated());
+    assertNull(dimensions.levels());
+  }
+
+  @Test
+  void anExplicitHeightBeatsTheTypeEstimate() {
+    var dimensions = parseEstimating("building", "garage", "height", "30");
+    assertEquals(30.0, dimensions.height());
+    assertFalse(dimensions.estimated());
+    assertEquals(0, metrics.get(BuildingMetrics.HEIGHT_FROM_TYPE));
+  }
+
+  @Test
+  void aLevelCountBeatsTheTypeEstimate() {
+    var dimensions = parseEstimating("building", "garage", "building:levels", "5");
+    assertEquals(15.0, dimensions.height());
+    assertEquals(5, dimensions.levels());
+    assertEquals(1, metrics.get(BuildingMetrics.HEIGHT_FROM_LEVELS));
+    assertEquals(0, metrics.get(BuildingMetrics.HEIGHT_FROM_TYPE));
+  }
+
+  @Test
+  void aMalformedHeightFallsThroughToTheEstimateRatherThanNothing() {
+    var dimensions = parseEstimating("building", "house", "height", "twelve");
+    assertEquals(6.0, dimensions.height());
+    assertTrue(dimensions.estimated());
+    assertEquals(1, metrics.get(BuildingMetrics.HEIGHT_INVALID));
+  }
+
+  @Test
+  void aTaggedRoofHeightIsStillAddedToAnEstimate() {
+    var dimensions = parseEstimating("building", "house", "roof:height", "2");
+    assertEquals(8.0, dimensions.height());
+    assertEquals(2.0, dimensions.roofHeight());
+  }
+
+  @Test
+  void aBuildingPartIsEstimatedFromItsOwnType() {
+    var dimensions = parseEstimating("building:part", "garage");
+    assertEquals(3.0, dimensions.height());
+  }
+
+  @Test
+  void aGenericBuildingPartUsesTheParentBuildingType() {
+    // building:part=yes carries no type of its own, so the building tag decides.
+    assertEquals(12.0, parseEstimating("building:part", "yes", "building", "apartments").height());
   }
 
   @Test

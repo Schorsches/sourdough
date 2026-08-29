@@ -88,7 +88,12 @@ class SchemaSelectionTest {
 
   @Test
   void nameIsTheOsmNameTagAndVariantsAreAdded() {
-    var config = new ShortbreadConfiguration(Schema.SHORTBREAD, List.of("de", "ko-Latn", "fr"), 3.0);
+    var config = new ShortbreadConfiguration(
+      Schema.SHORTBREAD,
+      List.of("de", "ko-Latn", "fr"),
+      3.0,
+      ShortbreadConfiguration.DEFAULT_ESTIMATE_MISSING_HEIGHTS
+    );
     var feature = TestSupport.processOne(
       new fyi.osm.sourdough.shortbread.layers.PlaceLabels(config),
       TestSupport.node(

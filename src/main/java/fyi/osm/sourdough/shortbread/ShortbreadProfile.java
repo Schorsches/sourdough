@@ -46,7 +46,11 @@ public class ShortbreadProfile extends ForwardingProfile {
   public ShortbreadProfile(ShortbreadConfiguration config) {
     this.config = config;
 
-    var dimensions = new BuildingDimensionParser(config.levelHeight(), buildingMetrics);
+    var dimensions = new BuildingDimensionParser(
+      config.levelHeight(),
+      config.estimateMissingHeights(),
+      buildingMetrics
+    );
 
     var layers = new ArrayList<ShortbreadLayer>(
       List.of(
