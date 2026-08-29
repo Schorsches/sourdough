@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shortbread 3D buildings check</title>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<style>
+  html, body { margin: 0; height: 100%; font: 13px system-ui, sans-serif; }
+  #map { position: absolute; inset: 0; }
+  #panel {
+    position: absolute; top: 10px; left: 10px; z-index: 1;
+    background: rgba(255,255,255,.94); padding: 10px 12px; border-radius: 6px;
+    max-width: 320px; line-height: 1.45; box-shadow: 0 1px 4px rgba(0,0,0,.3);
+  }
+  #panel h1 { font-size: 13px; margin: 0 0 6px; }
+  #panel p { margin: 4px 0; }
+  #panel code { background: #eee; padding: 0 3px; border-radius: 3px; }
+  #readout { margin-top: 8px; padding-top: 8px; border-top: 1px solid #ddd; min-height: 3em; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div id="panel">
+  <h1>Shortbread 1.1 + 3D buildings</h1>
+  <p>What to check:</p>
+  <p>
+    building footprints extrude &middot; heights are numbers &middot; elevated
+    <code>building_parts</code> sit above ground &middot; buildings with no height still
+    draw &middot; zooming past 14 overzooms cleanly.
+  </p>
+  <div id="readout">Click a building for its attributes.</div>
+</div>
+
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/pmtiles@3.0.6/dist/pmtiles.js"></script>
+<script>
+// Point this at a PMTiles archive built with --schema shortbread-1.1-3d.
+// For local checking:  npx serve .   (with the .pmtiles file alongside this page)
+const ARCHIVE = new URLSearchParams(location.search).get('pmtiles')
+  || 'shortbread-1.1-3d.pmtiles';
+
+const protocol = new pmtiles.Protocol();
+maplibregl.addProtocol('pmtiles', protocol.tile);
+
+// Buildings with no dimensions in OSM carry no height attribute at all, by design.
+// Every height expression below therefore needs a fallback.
+const FALLBACK_HEIGHT = 8;
+
+const map = new maplibregl.Map({
+  container: 'map',
+  hash: true,
+  pitch: 60,
+  zoom: 16,
+  style: {
+    version: 8,
+    sources: {
+      shortbread: {
+        type: 'vector',
+        url: 'pmtiles://' + ARCHIVE,
+        // The tileset stops at 14; the client overzooms above that.
+        maxzoom: 14
+      }
+    },
+    layers: [
+      { id: 'background', type: 'background', paint: { 'background-color': '#e8e6e1' } },
+      {
+        id: 'ocean', type: 'fill', source: 'shortbread', 'source-layer': 'ocean',
+        paint: { 'fill-color': '#a8c9e8' }
+      },
+      {
+        id: 'water', type: 'fill', source: 'shortbread', 'source-layer': 'water_polygons',
+        paint: { 'fill-color': '#a8c9e8' }
+      },
+      {
+        id: 'land', type: 'fill', source: 'shortbread', 'source-layer': 'land',
+        paint: { 'fill-color': '#dfe3d8' }
+      },
+      {
+        id: 'streets', type: 'line', source: 'shortbread', 'source-layer': 'streets',
+        paint: { 'line-color': '#ffffff', 'line-width': ['interpolate', ['linear'], ['zoom'], 12, 0.5, 18, 6] }
+      },
+      {
+        // Whole buildings. Where parts exist they are more accurate, so those are drawn
+        // on top; a real style would suppress the parent outline instead.
+        id: 'buildings-3d',
+        type: 'fill-extrusion',
+        source: 'shortbread',
+        'source-layer': 'buildings',
+        minzoom: 14,
+        paint: {
+          'fill-extrusion-height': ['coalesce', ['get', 'height'], FALLBACK_HEIGHT],
+          'fill-extrusion-base': ['coalesce', ['get', 'min_height'], 0],
+          // Estimated heights are tinted so you can see which are derived from levels.
+          'fill-extrusion-color': [
+            'case',
+            ['has', 'building_colour'], ['get', 'building_colour'],
+            ['==', ['get', 'height_estimated'], true], '#c9b8a8',
+            ['has', 'height'], '#bfc4c9',
+            '#d8d8d8'
+          ],
+          'fill-extrusion-opacity': 0.95
+        }
+      },
+      {
+        id: 'building-parts-3d',
+        type: 'fill-extrusion',
+        source: 'shortbread',
+        'source-layer': 'building_parts',
+        minzoom: 14,
+        paint: {
+          'fill-extrusion-height': ['coalesce', ['get', 'height'], FALLBACK_HEIGHT],
+          'fill-extrusion-base': ['coalesce', ['get', 'min_height'], 0],
+          'fill-extrusion-color': ['coalesce', ['get', 'building_colour'], '#b9a48f'],
+          'fill-extrusion-opacity': 0.95
+        }
+      }
+    ]
+  }
+});
+
+map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }));
+
+map.on('load', () => {
+  // Center on wherever the data actually is, unless the URL hash already says.
+  if (!location.hash) {
+    const bounds = map.getSource('shortbread')?.bounds;
+    if (bounds) map.fitBounds(bounds, { pitch: 60, maxZoom: 17 });
+  }
+});
+
+const readout = document.getElementById('readout');
+map.on('click', (event) => {
+  const hits = map.queryRenderedFeatures(event.point, {
+    layers: ['buildings-3d', 'building-parts-3d']
+  });
+  if (!hits.length) {
+    readout.textContent = 'No building here.';
+    return;
+  }
+  const props = hits[0].properties;
+  const rows = Object.entries(props)
+    .map(([k, v]) => `<div><code>${k}</code> = ${v} <i>(${typeof v})</i></div>`)
+    .join('');
+  readout.innerHTML =
+    `<b>${hits[0].sourceLayer}</b>${rows}` +
+    (props.height === undefined
+      ? `<div><i>no height in OSM; drawn at ${FALLBACK_HEIGHT} m</i></div>`
+      : '');
+});
+</script>
+</body>
+</html>

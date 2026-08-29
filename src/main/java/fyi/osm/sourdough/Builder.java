@@ -35,11 +35,16 @@ import fyi.osm.sourdough.layers.Shops;
 import fyi.osm.sourdough.layers.Tourism;
 import fyi.osm.sourdough.layers.Water;
 import fyi.osm.sourdough.layers.Waterways;
+import fyi.osm.sourdough.shortbread.LanguagePresets;
+import fyi.osm.sourdough.shortbread.ShortbreadConfiguration;
+import fyi.osm.sourdough.shortbread.ShortbreadProfile;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 
 public class Builder extends ForwardingProfile {
+
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(Builder.class);
 
   private final Configuration config;
 
@@ -120,7 +125,28 @@ public class Builder extends ForwardingProfile {
   }
 
   static void run(Arguments args) throws IOException {
-    args = args.orElse(Arguments.of("maxzoom", 15));
+    var schema = Schema.fromId(
+      args.getString("schema", "tile schema to generate (" + Schema.ids() + ")", Schema.SOURDOUGH.id())
+    );
+
+    // Each schema carries its own default maxzoom. An explicit --maxzoom still wins,
+    // except that Shortbread fixes the tileset maxzoom at 14 by specification.
+    int requestedMaxzoom = args.getInteger("maxzoom", "maximum zoom level", schema.defaultMaxzoom());
+    if (schema.isShortbread() && requestedMaxzoom > schema.defaultMaxzoom()) {
+      throw new IllegalArgumentException(
+        "The " +
+        schema.id() +
+        " schema has a fixed maximum zoom of " +
+        schema.defaultMaxzoom() +
+        ", but --maxzoom " +
+        requestedMaxzoom +
+        " was requested. Shortbread tiles are overzoomed by the client above zoom " +
+        schema.defaultMaxzoom() +
+        "; building higher zoom levels would produce an archive that is not Shortbread."
+      );
+    }
+    args = args.orElse(Arguments.of("maxzoom", schema.defaultMaxzoom()));
+
     String area = args.getString("area", "geofabrik area to download", "monaco");
     String language = args.getString(
       "language",
@@ -129,7 +155,10 @@ public class Builder extends ForwardingProfile {
     );
     List<String> additionalLanguages = args.getList(
       "additional_languages",
-      "list of additional languages to include as separate attributes (e.g. 'fr,de,es')",
+      "list of additional languages to include as separate attributes (e.g. 'fr,de,es'), " +
+      "or a preset name (" +
+      LanguagePresets.presetNames() +
+      ")",
       List.of()
     );
 
@@ -140,6 +169,27 @@ public class Builder extends ForwardingProfile {
         Path.of("data", "sources", "water-polygons-split-3857.zip"),
         "https://osmdata.openstreetmap.de/download/water-polygons-split-3857.zip"
       );
+
+    if (schema.isShortbread()) {
+      if (language != null) {
+        LOGGER.warn(
+          "--language does not apply to the {} schema: Shortbread's `name` attribute is the " +
+          "OSM name tag itself. Use --additional-languages to emit name_xx attributes instead.",
+          schema.id()
+        );
+      }
+      var languages = LanguagePresets.resolve(additionalLanguages);
+      var config = new ShortbreadConfiguration(
+        schema,
+        languages,
+        ShortbreadConfiguration.DEFAULT_LEVEL_HEIGHT_METERS
+      );
+      planetiler
+        .setProfile(new ShortbreadProfile(config))
+        .setOutput("data/" + schema.id() + ".pmtiles")
+        .run();
+      return;
+    }
 
     var config = new Configuration(language, additionalLanguages);
     planetiler.setProfile(new Builder(config)).setOutput("data/sourdough.pmtiles").run();

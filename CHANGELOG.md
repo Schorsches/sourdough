@@ -2,6 +2,18 @@
 
 This file documents notable changes to the Sourdough schema and its reference implementation.
 
+## Unreleased
+
+- Add a `--schema` option selecting the output tile schema. Sourdough remains the default
+  and its output is unchanged.
+- Add a Shortbread 1.1 schema (`--schema shortbread-1.1`), implementing all 26 layers
+  against a pinned specification revision. See [SHORTBREAD_SCHEMA.md](./SHORTBREAD_SCHEMA.md).
+- Add a 3D buildings extension (`--schema shortbread-1.1-3d`) with normalized height,
+  min_height and roof attributes plus a separate `building_parts` layer. This is an
+  extension defined by this repository, not part of Shortbread 1.1. See
+  [BUILDINGS_3D.md](./BUILDINGS_3D.md).
+- Add a test suite and a CI workflow that runs it. The repository previously had neither.
+
 ## v0.4.0
 
 - Add `_minzoom` and `_reczoom` attributes to point features in all layers (see SCHEMA.md)

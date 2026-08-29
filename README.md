@@ -37,6 +37,27 @@ java -jar target/sourdough-builder-HEAD-with-deps.jar \
 
 This downloads the necessary input data (an OSM PBF extract from [Geofabrik](https://www.geofabrik.de/) and OSM Coastline data from [openstreetmap.de](https://osmdata.openstreetmap.de/data/coast.html)), generates tiles in the Sourdough schema, and writes them out to a PMTiles archive that you can upload to cloud storage and serve to web maps. See [docs.protomaps.com](https://docs.protomaps.com/) for advice on hosting and serving PMTiles data.
 
+## Shortbread tiles
+
+This repository can also generate tiles in the [Shortbread schema][shortbread], which has
+an ecosystem of existing map styles, and a variant that adds 3D building data for
+`fill-extrusion` rendering:
+
+```bash
+# Shortbread 1.1, exactly as specified
+java -jar target/sourdough-builder-HEAD-with-deps.jar \
+  --download --area iceland --schema shortbread-1.1 --output shortbread.pmtiles
+
+# the same, plus a documented 3D buildings extension
+java -jar target/sourdough-builder-HEAD-with-deps.jar \
+  --download --area iceland --schema shortbread-1.1-3d --output shortbread-3d.pmtiles
+```
+
+Sourdough remains the default schema and its output is unchanged. See
+[SHORTBREAD_SCHEMA.md](./SHORTBREAD_SCHEMA.md) for the exact specification revision
+implemented, and [BUILDINGS_3D.md](./BUILDINGS_3D.md) for the 3D extension, which is
+defined by this repository and is **not** part of Shortbread 1.1.
+
 ## License and attribution requirements
 
 The **Sourdough tile schema** and its **Planetiler reference implementation** contained in this repository are dedicated to the public domain via the [CC0] license. You may use them however you want, and do not need to give credit to the Sourdough project or its authors. See the [LICENSE](./LICENSE) file for details.
@@ -48,6 +69,7 @@ The **Sourdough tile schema** and its **Planetiler reference implementation** co
 [synonymous tags]: https://wiki.openstreetmap.org/wiki/Synonymous_tags
 [troll tags]: https://wiki.openstreetmap.org/wiki/Trolltag
 [Planetiler]: https://github.com/onthegomap/planetiler?tab=readme-ov-file#planetiler
+[shortbread]: https://shortbread-tiles.org/
 [CC0]: https://creativecommons.org/public-domain/cc0/
 [ODbL]: https://opendatacommons.org/licenses/odbl/
 [attribution guidelines]: https://osmfoundation.org/wiki/Licence/Attribution_Guidelines#Attribution_text

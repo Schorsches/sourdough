@@ -1,0 +1,213 @@
+# Shortbread 1.1 support
+
+This repository can generate tiles in the [Shortbread vector tile schema][shortbread] in
+addition to its own Sourdough schema. Shortbread is a lean, general-purpose schema with
+an ecosystem of existing map styles, so tiles generated this way work with styles you did
+not have to write yourself.
+
+```bash
+mvn package
+java -jar target/sourdough-builder-HEAD-with-deps.jar \
+  --download --area iceland --schema shortbread-1.1 --output shortbread.pmtiles
+```
+
+## Specification revision
+
+| | |
+|---|---|
+| Version | **1.1** (released, not a draft) |
+| Published at | <https://shortbread-tiles.org/schema/1.1/> |
+| Repository | <https://github.com/shortbread-tiles/shortbread-docs> |
+| **Pinned revision** | **`fc5c602c84a48cc6189b3bdbb36b9ed8abf57924`** |
+| Revision date | 2026-08-18 |
+| Retrieved | 2026-08-28 |
+
+The specification has **no `v1.1` git tag and no GitHub release**, so a commit hash is the
+only immutable way to identify it. The content commit is `b4f0cd5d…` ("Release Shortbread
+1.1"); the merge commit above is the one on `main`.
+
+Implementation is developed against that revision. Later edits to the specification do
+not silently change what this code targets: the revision is recorded in
+`ShortbreadSchema.SPEC_REVISION`, and moving to a newer one is a deliberate change.
+
+## How the schema is described in code
+
+`src/main/java/fyi/osm/sourdough/shortbread/ShortbreadSchema.java` holds a declarative
+table of all 26 layers: geometry type, minimum zoom, and every attribute with its type.
+That table is the single source of truth. `ShortbreadConformanceTest` drives the whole
+profile over a fixture corpus and checks each emitted feature against it, so the schema
+is stated once rather than in code, tests and prose separately.
+
+### Adopting a future Shortbread version
+
+1. Diff the new `1.x.md` against the pinned revision above.
+2. Update `ShortbreadSchema` (layer list, attributes, zooms) and re-pin the revision.
+3. Run `mvn test`. The conformance test now fails wherever the implementation has not
+   caught up, which is the to-do list.
+4. Add a new value to the `Schema` enum (`shortbread-1.2`) so that the older schema stays
+   available to anyone who needs it.
+
+Shortbread's [versioning policy][versioning] guarantees that a style written for X.Y
+works against any tileset with the same major and an equal or greater minor version.
+Minor versions may add layers, fields and `kind` values and may change zoom thresholds,
+but may not remove or rename layers or fields, or change a layer's geometry type.
+
+## Zoom levels
+
+Shortbread fixes the tileset zoom range at **0 to 14**. Higher client zooms are served by
+overzooming the zoom-14 tiles, which MapLibre and other renderers do automatically.
+
+Accordingly, `--schema shortbread-1.1` defaults to `--maxzoom 14`, and **rejects a
+`--maxzoom` above 14** rather than building an archive that claims to be Shortbread and is
+not. Sourdough's own default of 15 is unaffected.
+
+## Names and languages
+
+`name` is the OSM `name` tag verbatim. Additional languages are emitted as `name_xx`
+attributes sourced from `name:xx`, preserving IETF subtags (`name_ko-Latn`).
+
+Shortbread leaves the choice of languages to the implementation, and every extra language
+is another string attribute on every named label feature. **No language attributes are
+emitted by default.** To add some:
+
+```bash
+# an explicit list
+--additional-languages fr,de,es
+
+# or a preset: the 43 codes used by SmartMaps Planet, being the 24 official EU
+# languages plus Luxembourgish, eight widely used non-Latin-script languages, and
+# Latin transliterations of those
+--additional-languages smartmaps
+```
+
+Sourdough's `--language` option, which rewrites `name` itself from `name:xx`, **does not
+apply** to the Shortbread schemas and logs a warning if you pass it: the specification
+names the OSM `name` key as the source of that attribute.
+
+## Deliberate deviations from the specification
+
+The specification has two internal gaps. Both are resolved here in the direction that
+produces a usable map, and both are recorded rather than hidden.
+
+| Where | The gap | What this implementation does |
+|---|---|---|
+| `water_lines_labels` | 1.1 added `kind=drain` to `water_lines`, but the label layer's zoom table still lists only canals, rivers, streams and ditches. It is undefined whether named drains are labelled. | Named drains are labelled from zoom 14, the same as ditches and streams. |
+| `place_labels` | The default population for capitals is given as "depends on place \*", but the footnote the asterisk refers to was never written. | A capital falls back to the default for its underlying `place` value (city 100,000, town 5,000, village 100, hamlet 50). This keeps the population sort meaningful for capitals. |
+
+Two further specification quirks are reproduced faithfully rather than corrected, because
+they are part of the data contract that existing styles rely on:
+
+- The label layer for `street_polygons` is named `streets_polygons_labels` — plural where
+  the polygon layer is singular.
+- `buildings` carries a single property `dummy`, always `1`, and `street_polygons.rail` is
+  documented as always false and is therefore never emitted.
+- `aerialways` uses `kind=rope-tow` (hyphen) for OSM's `aerialway=rope_tow` (underscore).
+
+## Attributes that are absent versus false
+
+Attributes documented with a default (`false`, an empty string, or "field not available")
+are **omitted** when they hold that default. A consumer cannot distinguish an absent
+attribute from one set to its documented default, and omitting them is a large part of
+what keeps zoom-14 tiles small.
+
+Three attributes are always present because the schema says so: `buildings.dummy`,
+`streets.kind` and `street_polygons.kind`.
+
+## Layer inventory
+
+All 26 layers are implemented. Every layer is built to zoom 14.
+
+| Layer | Geometry | From zoom | Implementation |
+|---|---|---|---|
+| `ocean` | polygon | 0 | `layers/Ocean.java` |
+| `water_polygons` | polygon | 4 | `layers/WaterPolygons.java` |
+| `water_polygons_labels` | point | 4 | `layers/WaterPolygons.java` |
+| `water_lines` | line | 9 | `layers/WaterLines.java` |
+| `water_lines_labels` | line | 12 | `layers/WaterLines.java` |
+| `dam_lines` | line | 12 | `layers/Dams.java` |
+| `dam_polygons` | polygon | 12 | `layers/Dams.java` |
+| `pier_lines` | line | 12 | `layers/Piers.java` |
+| `pier_polygons` | polygon | 12 | `layers/Piers.java` |
+| `boundaries` | line | 0 | `layers/Boundaries.java` |
+| `boundary_labels` | point | 2 | `layers/BoundaryLabels.java` |
+| `place_labels` | point | 4 | `layers/PlaceLabels.java` |
+| `land` | polygon | 7 | `layers/Land.java`, `mapping/LandKinds.java` |
+| `sites` | polygon | 14 | `layers/Sites.java`, `mapping/SiteKinds.java` |
+| `buildings` | polygon | 14 | `layers/Buildings.java` |
+| `addresses` | point | 14 | `layers/Addresses.java` |
+| `streets` | line | 5 | `layers/Streets.java`, `mapping/StreetKinds.java` |
+| `street_polygons` | polygon | 11 | `layers/StreetPolygons.java` |
+| `street_labels` | line | 10 | `layers/StreetLabels.java` |
+| `streets_polygons_labels` | point | 14 | `layers/StreetPolygons.java` |
+| `street_labels_points` | point | 12 | `layers/StreetLabelsPoints.java` |
+| `bridges` | polygon | 12 | `layers/Bridges.java` |
+| `aerialways` | line | 12 | `layers/Aerialways.java` |
+| `ferries` | line | 10 | `layers/Ferries.java` |
+| `public_transport` | point | 11 | `layers/PublicTransport.java` |
+| `pois` | point | 14 | `layers/Pois.java`, `mapping/PoiKinds.java` |
+
+### Feature ordering
+
+Five layers specify an order, and all five set an explicit Planetiler sort key. Nothing
+relies on iteration or hash order.
+
+| Layer | Order |
+|---|---|
+| `water_polygons_labels` | `way_area`, largest first |
+| `boundary_labels` | `way_area`, largest first |
+| `place_labels` | `population`, largest first |
+| `streets` | z-order: OSM `layer`, then tunnel before ground before bridge, then road class |
+| `street_polygons` | the same z-order |
+
+### `way_area` units
+
+The units differ between layers, and this is not an oversight in the specification:
+
+- `water_polygons` and `water_polygons_labels`: **square meters** of the Mercator
+  projection.
+- `boundary_labels`: **hectares**.
+
+Areas are measured on the original source geometry, before tile simplification.
+
+### Relation handling
+
+`boundaries` is the only layer whose attributes genuinely come from parent relations, and
+it uses Planetiler's relation preprocessor rather than any spatial join:
+
+- `admin_level` is the **lowest** value across the parent administrative relations, so a
+  way that is both a national and a state border reads as national.
+- `maritime` is true when the way itself has `maritime=yes` **or** `natural=coastline`.
+- `disputed` is true when the way has `disputed=yes`, **or** it belongs to a
+  `boundary=disputed` relation with no `admin_level`, **or** to one at admin level 2 or 4.
+
+Multipolygons are handled by Planetiler's OSM reader for every polygon layer.
+
+## Input data
+
+Shortbread 1.1 needs exactly the two sources Sourdough already uses: an OSM PBF extract
+and the [OSMCoastline water polygons][coastline]. No Natural Earth data and no land
+polygons are required. The `ocean` layer is fed from the same shapefile Sourdough's
+`water` layer uses, registered once per run, so switching schemas never downloads or
+processes anything twice.
+
+## Comparison with other implementations
+
+`shortbread-tilemaker`, the project's own reference implementation, still declares
+`"version": "1.0"` and does not implement the 1.1 changes (no `motorcar` or `foot`, no
+access normalization, and the older `pois` selection). Differential comparison against it
+is therefore only meaningful on the parts of the schema that 1.0 and 1.1 share.
+
+## Licensing
+
+The Shortbread specification is published under CC0. This repository is also CC0; see
+[LICENSE](./LICENSE).
+
+Generated tiles are derived from OpenStreetMap, which is licensed under the [ODbL][odbl].
+If you publish a map made from these tiles you must credit OpenStreetMap. See the
+[attribution guidelines][attribution].
+
+[shortbread]: https://shortbread-tiles.org/
+[versioning]: https://shortbread-tiles.org/schema/versioning/
+[coastline]: https://osmdata.openstreetmap.de/data/coast.html
+[odbl]: https://opendatacommons.org/licenses/odbl/
+[attribution]: https://osmfoundation.org/wiki/Licence/Attribution_Guidelines#Attribution_text
