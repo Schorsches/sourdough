@@ -1,4 +1,4 @@
-package fyi.osm.sourdough.shortbread;
+package fyi.osm.sourdough.common;
 
 import com.onthegomap.planetiler.reader.WithTags;
 import com.onthegomap.planetiler.util.Parse;

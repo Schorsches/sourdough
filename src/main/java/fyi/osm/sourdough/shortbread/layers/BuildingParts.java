@@ -6,8 +6,8 @@ import com.onthegomap.planetiler.reader.SourceFeature;
 import fyi.osm.sourdough.shortbread.ShortbreadConfiguration;
 import fyi.osm.sourdough.shortbread.ShortbreadLayer;
 import fyi.osm.sourdough.shortbread.ShortbreadSchema;
-import fyi.osm.sourdough.shortbread.buildings3d.BuildingDimensionParser;
-import fyi.osm.sourdough.shortbread.buildings3d.BuildingMetrics;
+import fyi.osm.sourdough.common.buildings3d.BuildingDimensionParser;
+import fyi.osm.sourdough.common.buildings3d.BuildingMetrics;
 import fyi.osm.sourdough.shortbread.buildings3d.Buildings3d;
 
 /**

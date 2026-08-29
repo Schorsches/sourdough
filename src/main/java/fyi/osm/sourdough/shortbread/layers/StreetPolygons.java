@@ -4,12 +4,12 @@ import com.onthegomap.planetiler.FeatureCollector;
 import com.onthegomap.planetiler.expression.Expression;
 import com.onthegomap.planetiler.reader.SourceFeature;
 import com.onthegomap.planetiler.reader.WithTags;
-import fyi.osm.sourdough.shortbread.Booleans;
+import fyi.osm.sourdough.common.Booleans;
 import fyi.osm.sourdough.shortbread.ShortbreadConfiguration;
 import fyi.osm.sourdough.shortbread.ShortbreadLayer;
 import fyi.osm.sourdough.shortbread.ShortbreadNames;
 import fyi.osm.sourdough.shortbread.ShortbreadSchema;
-import fyi.osm.sourdough.shortbread.ZOrder;
+import fyi.osm.sourdough.common.ZOrder;
 import java.util.Map;
 
 /**

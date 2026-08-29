@@ -1,4 +1,4 @@
-package fyi.osm.sourdough.shortbread.buildings3d;
+package fyi.osm.sourdough.common.buildings3d;
 
 /**
  * Normalized 3D dimensions of a building or building part, in meters.

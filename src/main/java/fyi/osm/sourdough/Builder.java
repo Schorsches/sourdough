@@ -35,7 +35,7 @@ import fyi.osm.sourdough.layers.Shops;
 import fyi.osm.sourdough.layers.Tourism;
 import fyi.osm.sourdough.layers.Water;
 import fyi.osm.sourdough.layers.Waterways;
-import fyi.osm.sourdough.shortbread.LanguagePresets;
+import fyi.osm.sourdough.common.LanguagePresets;
 import fyi.osm.sourdough.shortbread.ShortbreadConfiguration;
 import fyi.osm.sourdough.shortbread.ShortbreadProfile;
 import java.io.IOException;

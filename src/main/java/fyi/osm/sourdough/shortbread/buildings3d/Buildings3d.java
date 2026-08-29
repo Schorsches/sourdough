@@ -2,6 +2,7 @@ package fyi.osm.sourdough.shortbread.buildings3d;
 
 import com.onthegomap.planetiler.FeatureCollector;
 import com.onthegomap.planetiler.reader.SourceFeature;
+import fyi.osm.sourdough.common.buildings3d.BuildingDimensions;
 import java.util.List;
 import java.util.Map;
 

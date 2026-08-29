@@ -1,4 +1,4 @@
-package fyi.osm.sourdough.shortbread;
+package fyi.osm.sourdough.common;
 
 /**
  * Layout of the `ref` attribute for the street label layers.

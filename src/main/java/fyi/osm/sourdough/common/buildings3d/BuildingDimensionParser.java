@@ -1,4 +1,4 @@
-package fyi.osm.sourdough.shortbread.buildings3d;
+package fyi.osm.sourdough.common.buildings3d;
 
 import com.onthegomap.planetiler.reader.WithTags;
 import com.onthegomap.planetiler.util.Parse;

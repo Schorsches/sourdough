@@ -1,4 +1,4 @@
-package fyi.osm.sourdough.shortbread;
+package fyi.osm.sourdough.common;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;

@@ -1,4 +1,4 @@
-package fyi.osm.sourdough.shortbread;
+package fyi.osm.sourdough.common;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;

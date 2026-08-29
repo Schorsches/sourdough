@@ -9,7 +9,7 @@ import com.onthegomap.planetiler.geo.GeometryException;
 import com.onthegomap.planetiler.reader.SourceFeature;
 import com.onthegomap.planetiler.util.Parse;
 import com.onthegomap.planetiler.util.SortKey;
-import fyi.osm.sourdough.shortbread.Booleans;
+import fyi.osm.sourdough.common.Booleans;
 import fyi.osm.sourdough.shortbread.ShortbreadConfiguration;
 import fyi.osm.sourdough.shortbread.ShortbreadLayer;
 import fyi.osm.sourdough.shortbread.ShortbreadNames;
