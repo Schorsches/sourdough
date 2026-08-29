@@ -49,7 +49,8 @@ public class Boundaries
    * A parent boundary relation. `adminLevel` is null for a disputed relation that
    * carries no admin_level, which the schema treats as applying to any member way.
    */
-  record BoundaryRelation(long id, Integer adminLevel, boolean disputed) implements OsmRelationInfo {}
+  public record BoundaryRelation(long id, Integer adminLevel, boolean disputed)
+    implements OsmRelationInfo {}
 
   @Override
   public List<OsmRelationInfo> preprocessOsmRelation(OsmElement.Relation relation) {

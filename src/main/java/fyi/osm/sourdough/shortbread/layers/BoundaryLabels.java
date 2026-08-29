@@ -36,7 +36,6 @@ public class BoundaryLabels extends ShortbreadLayer {
   @Override
   public Expression filter() {
     return Expression.and(
-      Expression.matchAny("type", "boundary", "multipolygon"),
       Expression.matchAny("boundary", "administrative"),
       Expression.matchField("name")
     );
