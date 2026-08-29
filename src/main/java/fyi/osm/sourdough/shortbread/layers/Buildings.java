@@ -1,18 +1,13 @@
 package fyi.osm.sourdough.shortbread.layers;
 
 import com.onthegomap.planetiler.FeatureCollector;
-import com.onthegomap.planetiler.FeatureMerge;
-import com.onthegomap.planetiler.ForwardingProfile;
-import com.onthegomap.planetiler.VectorTile;
 import com.onthegomap.planetiler.expression.Expression;
-import com.onthegomap.planetiler.geo.GeometryException;
 import com.onthegomap.planetiler.reader.SourceFeature;
 import fyi.osm.sourdough.shortbread.ShortbreadConfiguration;
 import fyi.osm.sourdough.shortbread.ShortbreadLayer;
 import fyi.osm.sourdough.shortbread.ShortbreadSchema;
 import fyi.osm.sourdough.shortbread.buildings3d.Buildings3d;
 import fyi.osm.sourdough.shortbread.buildings3d.BuildingDimensionParser;
-import java.util.List;
 
 /**
  * Shortbread `buildings`: every polygon with a building tag other than building=no,
@@ -25,8 +20,14 @@ import java.util.List;
  * Under the shortbread-1.1-3d schema the layer additionally carries the normalized 3D
  * attributes. Those are additive: a style written for base Shortbread renders identical
  * output either way.
+ *
+ * Buildings are deliberately not merged into multipolygons. Since every building in the
+ * base schema carries the same single attribute, merging by attributes would collapse
+ * every building in a tile into one feature: a Monaco extract went from ~5,200 buildings
+ * to 7. That costs feature picking, and it would make per-building extrusion heights
+ * meaningless in the 3D schema.
  */
-public class Buildings extends ShortbreadLayer implements ForwardingProfile.LayerPostProcessor {
+public class Buildings extends ShortbreadLayer {
 
   private final BuildingDimensionParser dimensions;
 
@@ -64,9 +65,4 @@ public class Buildings extends ShortbreadLayer implements ForwardingProfile.Laye
     }
   }
 
-  @Override
-  public List<VectorTile.Feature> postProcess(int zoom, List<VectorTile.Feature> items)
-    throws GeometryException {
-    return FeatureMerge.mergeMultiPolygon(items);
-  }
 }

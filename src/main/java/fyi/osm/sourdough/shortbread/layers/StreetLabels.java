@@ -11,6 +11,7 @@ import fyi.osm.sourdough.shortbread.Booleans;
 import fyi.osm.sourdough.shortbread.ShortbreadConfiguration;
 import fyi.osm.sourdough.shortbread.ShortbreadLayer;
 import fyi.osm.sourdough.shortbread.ShortbreadNames;
+import fyi.osm.sourdough.shortbread.RouteRef;
 import fyi.osm.sourdough.shortbread.ShortbreadSchema;
 import fyi.osm.sourdough.shortbread.mapping.StreetKinds;
 import java.util.List;
@@ -30,9 +31,6 @@ public class StreetLabels extends ShortbreadLayer implements ForwardingProfile.L
   public StreetLabels(ShortbreadConfiguration config) {
     super(config);
   }
-
-  /** The schema replaces semicolons in `ref` with this character. */
-  static final char REF_SEPARATOR = '\n';
 
   @Override
   public String name() {
@@ -68,44 +66,16 @@ public class StreetLabels extends ShortbreadLayer implements ForwardingProfile.L
     line.setAttr("kind", street.labelKind());
 
     if (ref != null) {
-      var laidOut = layoutRef(ref);
+      var laidOut = RouteRef.layout(ref);
       line.setAttr("ref", laidOut);
-      line.setAttr("ref_rows", rows(laidOut));
-      line.setAttr("ref_cols", columns(laidOut));
+      line.setAttr("ref_rows", RouteRef.rows(laidOut));
+      line.setAttr("ref_cols", RouteRef.columns(laidOut));
     }
     ShortbreadNames.setNames(sf, line, config.languages());
 
     if (Booleans.tunnel(sf)) {
       line.setAttr("tunnel", true);
     }
-  }
-
-  /** Semicolon-separated refs become one ref per line. */
-  static String layoutRef(String ref) {
-    return ref.replace(';', REF_SEPARATOR);
-  }
-
-  static int rows(String ref) {
-    int rows = 1;
-    for (int i = 0; i < ref.length(); i++) {
-      if (ref.charAt(i) == REF_SEPARATOR) rows++;
-    }
-    return rows;
-  }
-
-  /** The longest line, which is what determines how wide a shield must be. */
-  static int columns(String ref) {
-    int longest = 0;
-    int current = 0;
-    for (int i = 0; i < ref.length(); i++) {
-      if (ref.charAt(i) == REF_SEPARATOR) {
-        longest = Math.max(longest, current);
-        current = 0;
-      } else {
-        current++;
-      }
-    }
-    return Math.max(longest, current);
   }
 
   @Override
