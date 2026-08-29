@@ -38,6 +38,12 @@ public final class BuildingDimensionParser {
   }
 
   /**
+   * The assumed height in meters of one above-ground building level. Used both to derive
+   * a height from a level count and to size the type-based estimate.
+   */
+  public static final double DEFAULT_LEVEL_HEIGHT_METERS = 3.0;
+
+  /**
    * Upper plausibility bound for a height in meters. The tallest building in the world is
    * under 850 m, and the tallest structure of any kind under 650 m, so values beyond this
    * are tagging errors rather than architecture. Rejections are counted, not clamped, so

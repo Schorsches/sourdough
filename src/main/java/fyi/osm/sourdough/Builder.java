@@ -36,8 +36,11 @@ import fyi.osm.sourdough.layers.Tourism;
 import fyi.osm.sourdough.layers.Water;
 import fyi.osm.sourdough.layers.Waterways;
 import fyi.osm.sourdough.common.LanguagePresets;
+import fyi.osm.sourdough.common.buildings3d.BuildingDimensionParser;
 import fyi.osm.sourdough.shortbread.ShortbreadConfiguration;
 import fyi.osm.sourdough.shortbread.ShortbreadProfile;
+import fyi.osm.sourdough.smartmaps.SmartMapsConfiguration;
+import fyi.osm.sourdough.smartmaps.SmartMapsProfile;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
@@ -132,7 +135,7 @@ public class Builder extends ForwardingProfile {
     // Each schema carries its own default maxzoom. An explicit --maxzoom still wins,
     // except that Shortbread fixes the tileset maxzoom at 14 by specification.
     int requestedMaxzoom = args.getInteger("maxzoom", "maximum zoom level", schema.defaultMaxzoom());
-    if (schema.isShortbread() && requestedMaxzoom > schema.defaultMaxzoom()) {
+    if (schema.maxzoomIsFixed() && requestedMaxzoom > schema.defaultMaxzoom()) {
       throw new IllegalArgumentException(
         "The " +
         schema.id() +
@@ -140,9 +143,9 @@ public class Builder extends ForwardingProfile {
         schema.defaultMaxzoom() +
         ", but --maxzoom " +
         requestedMaxzoom +
-        " was requested. Shortbread tiles are overzoomed by the client above zoom " +
+        " was requested. These tiles are overzoomed by the client above zoom " +
         schema.defaultMaxzoom() +
-        "; building higher zoom levels would produce an archive that is not Shortbread."
+        "; building higher zoom levels would produce an archive that does not match the schema."
       );
     }
     args = args.orElse(Arguments.of("maxzoom", schema.defaultMaxzoom()));
@@ -170,35 +173,45 @@ public class Builder extends ForwardingProfile {
         "https://osmdata.openstreetmap.de/download/water-polygons-split-3857.zip"
       );
 
-    if (schema.isShortbread()) {
-      if (language != null) {
-        LOGGER.warn(
-          "--language does not apply to the {} schema: Shortbread's `name` attribute is the " +
-          "OSM name tag itself. Use --additional-languages to emit name_xx attributes instead.",
-          schema.id()
-        );
-      }
-      var languages = LanguagePresets.resolve(additionalLanguages);
-      boolean estimateHeights = args.getBoolean(
-        "estimate_missing_heights",
-        "estimate a height for buildings that have no dimensions in OSM, from their " +
-        "building type (marked with height_estimated)",
-        ShortbreadConfiguration.DEFAULT_ESTIMATE_MISSING_HEIGHTS
+    if (language != null && schema.usesVerbatimNames()) {
+      LOGGER.warn(
+        "--language does not apply to the {} schema: its `name` attribute is the OSM name " +
+        "tag itself. Use --additional-languages to emit per-language name attributes.",
+        schema.id()
       );
-      var config = new ShortbreadConfiguration(
-        schema,
-        languages,
-        ShortbreadConfiguration.DEFAULT_LEVEL_HEIGHT_METERS,
-        estimateHeights
-      );
-      planetiler
-        .setProfile(new ShortbreadProfile(config))
-        .setOutput("data/" + schema.id() + ".pmtiles")
-        .run();
-      return;
     }
 
-    var config = new Configuration(language, additionalLanguages);
-    planetiler.setProfile(new Builder(config)).setOutput("data/sourdough.pmtiles").run();
+    // An exhaustive switch, so that adding a schema does not compile until it is handled
+    // here. Each schema assembles its own configuration in its own package.
+    var profile = switch (schema) {
+      case SOURDOUGH -> new Builder(new Configuration(language, additionalLanguages));
+      case SHORTBREAD, SHORTBREAD_3D -> new ShortbreadProfile(
+        new ShortbreadConfiguration(
+          schema,
+          LanguagePresets.resolve(additionalLanguages),
+          ShortbreadConfiguration.DEFAULT_LEVEL_HEIGHT_METERS,
+          estimateMissingHeights(args)
+        )
+      );
+      case SMARTMAPS -> new SmartMapsProfile(
+        new SmartMapsConfiguration(
+          LanguagePresets.resolve(additionalLanguages),
+          BuildingDimensionParser.DEFAULT_LEVEL_HEIGHT_METERS,
+          estimateMissingHeights(args)
+        )
+      );
+    };
+
+    planetiler.setProfile(profile).setOutput("data/" + schema.id() + ".pmtiles").run();
+  }
+
+  /** Shared by every schema that carries building heights. */
+  private static boolean estimateMissingHeights(Arguments args) {
+    return args.getBoolean(
+      "estimate_missing_heights",
+      "estimate a height for buildings that have no dimensions in OSM, from their " +
+      "building type (marked as estimated)",
+      ShortbreadConfiguration.DEFAULT_ESTIMATE_MISSING_HEIGHTS
+    );
   }
 }

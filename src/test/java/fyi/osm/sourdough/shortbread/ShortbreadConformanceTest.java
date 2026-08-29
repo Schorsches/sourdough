@@ -231,17 +231,17 @@ class ShortbreadConformanceTest {
    * getGeometryType() is package-private, and the JTS type is what actually ends up in
    * the tile anyway.
    */
-  private static ShortbreadSchema.Geometry geometryOf(FeatureCollector.Feature feature) {
+  private static fyi.osm.sourdough.common.SchemaDescription.Geometry geometryOf(FeatureCollector.Feature feature) {
     var geometry = feature.getGeometry();
-    if (geometry instanceof org.locationtech.jts.geom.Puntal) return ShortbreadSchema.Geometry.POINT;
-    if (geometry instanceof org.locationtech.jts.geom.Lineal) return ShortbreadSchema.Geometry.LINE;
+    if (geometry instanceof org.locationtech.jts.geom.Puntal) return fyi.osm.sourdough.common.SchemaDescription.Geometry.POINT;
+    if (geometry instanceof org.locationtech.jts.geom.Lineal) return fyi.osm.sourdough.common.SchemaDescription.Geometry.LINE;
     if (geometry instanceof org.locationtech.jts.geom.Polygonal) {
-      return ShortbreadSchema.Geometry.POLYGON;
+      return fyi.osm.sourdough.common.SchemaDescription.Geometry.POLYGON;
     }
     throw new AssertionError("unexpected geometry " + geometry.getGeometryType());
   }
 
-  private static boolean matches(ShortbreadSchema.AttrType type, Object value) {
+  private static boolean matches(fyi.osm.sourdough.common.SchemaDescription.AttrType type, Object value) {
     return switch (type) {
       case STRING -> value instanceof String;
       case INTEGER -> value instanceof Integer || value instanceof Long;
