@@ -44,11 +44,6 @@ public enum Schema {
     return defaultMaxzoom;
   }
 
-  /** True for the Shortbread schemas, which share a profile and a specification. */
-  public boolean isShortbread() {
-    return this == SHORTBREAD || this == SHORTBREAD_3D;
-  }
-
   /**
    * True when the schema's maximum zoom is part of its definition rather than a
    * preference, so a higher --maxzoom is refused instead of quietly honoured. Both

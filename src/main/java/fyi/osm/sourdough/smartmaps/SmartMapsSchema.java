@@ -97,10 +97,12 @@ public final class SmartMapsSchema {
       0,
       attrs("admin_level", I, "disputed", B, "maritime", B)
     ),
-    // Merges Shortbread's streets and street_polygons, so both geometries occur.
+    // Merges Shortbread's streets, street_polygons and public_transport, so all three
+    // geometries occur. The stops are what the station, iata and icao fields below are
+    // for, which is what settles that they belong in this layer and not in poi.
     new LayerSpec(
       TRANSPORT,
-      Set.of(Geometry.LINE, Geometry.POLYGON),
+      Set.of(Geometry.LINE, Geometry.POLYGON, Geometry.POINT),
       5,
       attrs(
         "kind", S,

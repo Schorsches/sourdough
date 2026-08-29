@@ -10,6 +10,7 @@ import com.onthegomap.planetiler.config.Arguments;
 import com.onthegomap.planetiler.config.PlanetilerConfig;
 import fyi.osm.sourdough.integration.TileStats;
 import fyi.osm.sourdough.shortbread.ShortbreadSchema;
+import fyi.osm.sourdough.smartmaps.SmartMapsSchema;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -47,6 +48,7 @@ class ShortbreadIntegrationTest {
   private Path shortbread;
   private Path shortbread3d;
   private Path sourdough;
+  private Path smartmaps;
 
   @BeforeAll
   void generate() throws IOException {
@@ -63,6 +65,7 @@ class ShortbreadIntegrationTest {
     shortbread = build("shortbread-1.1");
     shortbread3d = build("shortbread-1.1-3d");
     sourdough = build("sourdough");
+    smartmaps = build("smartmaps");
   }
 
   private Path build(String schema) throws IOException {
@@ -170,6 +173,55 @@ class ShortbreadIntegrationTest {
     // A generous ceiling. The point is to catch an attribute being added that lands on
     // every building on the planet, not to pin an exact number.
     assertTrue(growth < 0.25, "3D extension grew tiles by " + Math.round(growth * 100) + "%");
+  }
+
+  @Test
+  void smartMapsGeneratesOnlyLayersItsLayoutDefines() throws IOException {
+    var known = new HashSet<>(SmartMapsSchema.layerNames());
+    var produced = stats(smartmaps).featuresByLayer().keySet();
+    assertTrue(produced.size() > 6, "expected a realistic number of layers, got " + produced);
+    for (var layer : produced) {
+      assertTrue(known.contains(layer), layer + " is not a SmartMaps layer");
+    }
+  }
+
+  @Test
+  void smartMapsGeneratesOnlyAttributesItsLayoutDefines() throws IOException {
+    var problems = new TreeSet<String>();
+    stats(smartmaps).attributesByLayer().forEach((layer, attributes) -> {
+      var spec = SmartMapsSchema.layer(layer);
+      for (var attribute : attributes) {
+        // Language variants are per-run configuration, not part of the fixed table.
+        if (attribute.startsWith("name:") || attribute.startsWith("name_")) continue;
+        if (!spec.attributes().containsKey(attribute)) {
+          problems.add(layer + "." + attribute);
+        }
+      }
+    });
+    assertEquals(new TreeSet<String>(), problems, "attributes not defined by the layout");
+  }
+
+  @Test
+  void smartMapsStopsAtZoom14AndKeepsBuildingsIndividual() throws IOException {
+    try (var reader = TileArchives.newReader(smartmaps, PlanetilerConfig.defaults())) {
+      assertEquals(SmartMapsSchema.MAXZOOM, reader.metadata().maxzoom());
+    }
+    var buildings = stats(smartmaps).featuresByLayer().getOrDefault(SmartMapsSchema.BUILDING, 0);
+    assertTrue(
+      buildings > 100,
+      "expected individual building polygons, got " + buildings + " features"
+    );
+  }
+
+  @Test
+  void theThreeSchemasAreComparableInSize() throws IOException {
+    var shortbreadStats = stats(shortbread);
+    var smartmapsStats = stats(smartmaps);
+    System.out.println(smartmapsStats.report("smartmaps"));
+    // SmartMaps carries 3D on every building where Shortbread's base schema carries none,
+    // so it is expected to be larger; this only catches a runaway.
+    double ratio = smartmapsStats.totalBytes() / (double) shortbreadStats.totalBytes();
+    assertTrue(ratio < 2.0, "smartmaps is " + Math.round(ratio * 100) + "% of shortbread");
   }
 
   @Test
