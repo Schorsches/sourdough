@@ -23,6 +23,13 @@ public final class WayArea {
   private static final double WORLD_AREA_SQUARE_METERS =
     EARTH_CIRCUMFERENCE_METERS * EARTH_CIRCUMFERENCE_METERS;
 
+  /**
+   * Upper endpoint for log-scale area sort keys. Comfortably larger than any single OSM
+   * water body or country, so real features spread across the scale rather than
+   * saturating at the top of it.
+   */
+  public static final double MAX_PLAUSIBLE_AREA = 1e13;
+
   /** Projected area in square meters, or null if the geometry cannot be measured. */
   public static Double squareMeters(SourceFeature sf) {
     try {
