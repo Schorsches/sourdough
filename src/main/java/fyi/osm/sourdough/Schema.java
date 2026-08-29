@@ -19,7 +19,14 @@ public enum Schema {
   SHORTBREAD("shortbread-1.1", 14),
 
   /** Shortbread 1.1 plus the documented 3D-buildings extension. */
-  SHORTBREAD_3D("shortbread-1.1-3d", 14);
+  SHORTBREAD_3D("shortbread-1.1-3d", 14),
+
+  /**
+   * The SmartMaps layer layout. No version suffix: unlike Shortbread there is no
+   * published specification to pin, so a version number would imply a fidelity this
+   * does not claim. See SMARTMAPS_SCHEMA.md.
+   */
+  SMARTMAPS("smartmaps", 14);
 
   private final String id;
   private final int defaultMaxzoom;
@@ -37,9 +44,21 @@ public enum Schema {
     return defaultMaxzoom;
   }
 
-  /** True for the Shortbread schemas, whose maxzoom is fixed by the specification. */
-  public boolean isShortbread() {
-    return this == SHORTBREAD || this == SHORTBREAD_3D;
+  /**
+   * True when the schema's maximum zoom is part of its definition rather than a
+   * preference, so a higher --maxzoom is refused instead of quietly honoured. Both
+   * Shortbread and SmartMaps stop at zoom 14 and expect the client to overzoom.
+   */
+  public boolean maxzoomIsFixed() {
+    return this != SOURDOUGH;
+  }
+
+  /**
+   * True when `name` is the OpenStreetMap name tag itself, so Sourdough's --language
+   * substitution does not apply.
+   */
+  public boolean usesVerbatimNames() {
+    return this != SOURDOUGH;
   }
 
   /** True when the 3D-buildings extension is enabled. */

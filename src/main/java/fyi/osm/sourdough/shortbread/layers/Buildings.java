@@ -7,7 +7,7 @@ import fyi.osm.sourdough.shortbread.ShortbreadConfiguration;
 import fyi.osm.sourdough.shortbread.ShortbreadLayer;
 import fyi.osm.sourdough.shortbread.ShortbreadSchema;
 import fyi.osm.sourdough.shortbread.buildings3d.Buildings3d;
-import fyi.osm.sourdough.shortbread.buildings3d.BuildingDimensionParser;
+import fyi.osm.sourdough.common.buildings3d.BuildingDimensionParser;
 
 /**
  * Shortbread `buildings`: every polygon with a building tag other than building=no,

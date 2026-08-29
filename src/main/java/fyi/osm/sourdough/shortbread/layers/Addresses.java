@@ -6,7 +6,7 @@ import com.onthegomap.planetiler.reader.SourceFeature;
 import fyi.osm.sourdough.shortbread.ShortbreadConfiguration;
 import fyi.osm.sourdough.shortbread.ShortbreadLayer;
 import fyi.osm.sourdough.shortbread.ShortbreadSchema;
-import fyi.osm.sourdough.shortbread.mapping.PoiKinds;
+import fyi.osm.sourdough.common.mapping.PoiKinds;
 
 /**
  * Shortbread `addresses`: anything carrying an address, at zoom 14. Areas are

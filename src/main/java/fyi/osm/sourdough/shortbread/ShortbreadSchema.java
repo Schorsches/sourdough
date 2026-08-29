@@ -1,5 +1,7 @@
 package fyi.osm.sourdough.shortbread;
 
+import fyi.osm.sourdough.common.SchemaDescription.AttrType;
+import fyi.osm.sourdough.common.SchemaDescription.Geometry;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,19 +33,6 @@ public final class ShortbreadSchema {
   /** Every Shortbread layer is built to this zoom; clients overzoom above it. */
   public static final int MAXZOOM = 14;
 
-  public enum Geometry {
-    POINT,
-    LINE,
-    POLYGON
-  }
-
-  /** The MVT value types the schema uses. */
-  public enum AttrType {
-    STRING,
-    INTEGER,
-    FLOAT,
-    BOOLEAN
-  }
 
   /**
    * @param name the tile layer name

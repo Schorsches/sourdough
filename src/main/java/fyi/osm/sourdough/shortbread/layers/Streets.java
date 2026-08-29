@@ -7,13 +7,13 @@ import com.onthegomap.planetiler.VectorTile;
 import com.onthegomap.planetiler.expression.Expression;
 import com.onthegomap.planetiler.geo.GeometryException;
 import com.onthegomap.planetiler.reader.SourceFeature;
-import fyi.osm.sourdough.shortbread.Access;
-import fyi.osm.sourdough.shortbread.Booleans;
+import fyi.osm.sourdough.common.Access;
+import fyi.osm.sourdough.common.Booleans;
 import fyi.osm.sourdough.shortbread.ShortbreadConfiguration;
 import fyi.osm.sourdough.shortbread.ShortbreadLayer;
 import fyi.osm.sourdough.shortbread.ShortbreadSchema;
-import fyi.osm.sourdough.shortbread.ZOrder;
-import fyi.osm.sourdough.shortbread.mapping.StreetKinds;
+import fyi.osm.sourdough.common.ZOrder;
+import fyi.osm.sourdough.common.mapping.StreetKinds;
 import java.util.List;
 
 /**

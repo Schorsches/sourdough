@@ -57,20 +57,28 @@ java -jar target/sourdough-builder-HEAD-with-deps.jar \
   | `sourdough` (default) | The Sourdough schema described in [SCHEMA.md](./SCHEMA.md) | 15 |
   | `shortbread-1.1` | [Shortbread 1.1](./SHORTBREAD_SCHEMA.md), exactly as specified | 14 |
   | `shortbread-1.1-3d` | Shortbread 1.1 plus the [3D buildings extension](./BUILDINGS_3D.md) | 14 |
+  | `smartmaps` | The [SmartMaps Planet layout](./SMARTMAPS_SCHEMA.md), shape-compatible | 14 |
 
   Omitting `--schema` builds Sourdough exactly as before.
 
   Shortbread fixes its tileset zoom range at 0-14 and expects clients to overzoom the
   zoom-14 tiles for higher zoom levels, which MapLibre does automatically. The Shortbread
   schemas therefore default to `--maxzoom 14` and **reject** a `--maxzoom` above 14, rather
-  than building an archive that claims to be Shortbread and is not.
+  than building an archive that claims to be Shortbread and is not. `smartmaps` stops at
+  zoom 14 for the same reason and behaves the same way.
 
-### Languages in the Shortbread schemas
+  `smartmaps` has no `-3d` variant: 3D building data is part of that layout itself, not an
+  extension to it.
 
-Shortbread emits language variants as `name_xx` attributes (rather than Sourdough's
-`name:xx`), and leaves the choice of languages to the implementation. **No language
-attributes are emitted unless you ask for them**, because every extra language is another
-string attribute on every named label feature.
+### Languages in the Shortbread and SmartMaps schemas
+
+Both keep `name` as the OSM `name` tag and leave the choice of language variants to the
+implementation. **No language attributes are emitted unless you ask for them**, because
+every extra language is another string attribute on every named label feature.
+
+Shortbread spells them `name_xx` (rather than Sourdough's `name:xx`). SmartMaps emits
+**both** spellings -- `name:de` and `name_de`, from the same OSM tag -- because a style
+written against that layout may read either.
 
 ```bash
 # an explicit list
@@ -81,18 +89,22 @@ string attribute on every named label feature.
 --additional-languages smartmaps
 ```
 
-`--language`, which rewrites `name` itself, applies to Sourdough only. Shortbread defines
-`name` as the OSM `name` tag, so passing `--language` alongside a Shortbread schema logs a
+`--language`, which rewrites `name` itself, applies to Sourdough only. The other schemas
+define `name` as the OSM `name` tag, so passing `--language` alongside one of them logs a
 warning and has no effect.
 
 ### 3D buildings options
 
 - `--estimate-missing-heights <true|false>` - Three quarters of OpenStreetMap buildings
-  have neither a height nor a level count. By default the `shortbread-1.1-3d` schema gives
-  those a height estimated from their building type, so they can still be drawn; every
-  estimated value is marked `height_estimated=true`. Set this to `false` to emit a height
-  only where OpenStreetMap actually provides one. See
-  [BUILDINGS_3D.md](./BUILDINGS_3D.md).
+  have neither a height nor a level count. By default the `shortbread-1.1-3d` and
+  `smartmaps` schemas give those a height estimated from their building type, so they can
+  still be drawn. Set this to `false` to emit a height only where OpenStreetMap actually
+  provides one. See [BUILDINGS_3D.md](./BUILDINGS_3D.md).
+
+  Under `shortbread-1.1-3d` every estimated value is marked `height_estimated=true`. The
+  `smartmaps` layout has no such field and no factual height field either -- only
+  `render_height` -- so estimates are not flagged there; what each height was derived from
+  is counted in the build log.
 
 ## Running the tests
 
@@ -100,9 +112,11 @@ warning and has no effect.
 mvn test
 ```
 
-This runs the unit, layer and schema-conformance suites. The conformance test checks
-generated features against the declarative schema table in `ShortbreadSchema.java`:
-layer names, geometry types, attribute names and types, and zoom ranges.
+This runs the unit, layer and schema-conformance suites. The conformance tests check
+generated features against the declarative schema tables in `ShortbreadSchema.java` and
+`SmartMapsSchema.java`: layer names, geometry types, attribute names and types, and zoom
+ranges. See [CI.md](./CI.md) for what runs in continuous integration and why the container
+image build skips the tests.
 
 Two further suites are excluded by default, because one needs input data and the other is
 slow enough to be worth running deliberately:

@@ -58,6 +58,23 @@ Sourdough remains the default schema and its output is unchanged. See
 implemented, and [BUILDINGS_3D.md](./BUILDINGS_3D.md) for the 3D extension, which is
 defined by this repository and is **not** part of Shortbread 1.1.
 
+## SmartMaps-compatible tiles
+
+There is also a schema whose layers and fields follow the SmartMaps Planet layout, with
+3D building data in the base schema rather than as an extension:
+
+```bash
+java -jar target/sourdough-builder-HEAD-with-deps.jar \
+  --download --area iceland --schema smartmaps --output smartmaps.pmtiles
+```
+
+This is **shape-compatible, not the SmartMaps tileset**, and this project is not
+affiliated with SmartMaps: a style written against that layout finds every layer and field
+it expects, but the classification behind those fields is this repository's own, so
+individual `kind` values may differ. Output carries OpenStreetMap attribution.
+[SMARTMAPS_SCHEMA.md](./SMARTMAPS_SCHEMA.md) states every deviation and lists every `kind`
+emitted.
+
 ## License and attribution requirements
 
 The **Sourdough tile schema** and its **Planetiler reference implementation** contained in this repository are dedicated to the public domain via the [CC0] license. You may use them however you want, and do not need to give credit to the Sourdough project or its authors. See the [LICENSE](./LICENSE) file for details.

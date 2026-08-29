@@ -9,7 +9,9 @@ import com.onthegomap.planetiler.config.Arguments;
 import fyi.osm.sourdough.shortbread.ShortbreadConfiguration;
 import fyi.osm.sourdough.shortbread.ShortbreadNames;
 import fyi.osm.sourdough.shortbread.ShortbreadProfile;
+import fyi.osm.sourdough.common.LanguagePresets;
 import fyi.osm.sourdough.shortbread.ShortbreadSchema;
+import fyi.osm.sourdough.smartmaps.SmartMapsSchema;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -21,8 +23,56 @@ class SchemaSelectionTest {
   void sourdoughIsTheDefaultAndKeepsItsOwnMaxzoom() {
     assertEquals(Schema.SOURDOUGH, Schema.fromId("sourdough"));
     assertEquals(15, Schema.SOURDOUGH.defaultMaxzoom());
-    assertFalse(Schema.SOURDOUGH.isShortbread());
+    assertFalse(Schema.SOURDOUGH.maxzoomIsFixed(), "Sourdough's maxzoom is a preference");
+    assertFalse(Schema.SOURDOUGH.usesVerbatimNames());
     assertFalse(Schema.SOURDOUGH.hasBuildings3d());
+  }
+
+  @Test
+  void everySchemaOtherThanSourdoughFixesItsMaxzoomAndKeepsOsmNames() {
+    for (var schema : Schema.values()) {
+      if (schema == Schema.SOURDOUGH) continue;
+      assertTrue(schema.maxzoomIsFixed(), schema.id() + " should fix its maxzoom");
+      assertTrue(schema.usesVerbatimNames(), schema.id() + " should keep the OSM name tag");
+      assertEquals(14, schema.defaultMaxzoom(), schema.id());
+    }
+  }
+
+  @Test
+  void smartMapsIsSelectableAndHasNoVersionSuffix() {
+    assertEquals(Schema.SMARTMAPS, Schema.fromId("smartmaps"));
+    assertEquals(SmartMapsSchema.MAXZOOM, Schema.SMARTMAPS.defaultMaxzoom());
+    // No suffix on purpose: there is no published specification to pin a version to.
+    assertFalse(Schema.SMARTMAPS.id().contains("-"), Schema.SMARTMAPS.id());
+    // The 3D content is part of the layout itself, so there is no separate 3D variant.
+    assertFalse(Schema.SMARTMAPS.hasBuildings3d());
+    assertTrue(Schema.ids().contains("smartmaps"));
+  }
+
+  @Test
+  void aMaxzoomAboveTheSmartMapsLimitIsRejectedToo() {
+    var args = Arguments.of("schema", "smartmaps", "maxzoom", "15", "area", "monaco");
+    var error = assertThrows(IllegalArgumentException.class, () -> Builder.run(args));
+    assertTrue(error.getMessage().contains("fixed maximum zoom"), error.getMessage());
+  }
+
+  @Test
+  void smartMapsEmitsBothNameSpellingsForARequestedLanguage() {
+    var config = new fyi.osm.sourdough.smartmaps.SmartMapsConfiguration(
+      LanguagePresets.resolve(List.of("smartmaps")),
+      3.0,
+      true
+    );
+    assertTrue(config.languages().contains("ko-Latn"), "the preset expands to IETF codes");
+    var feature = TestSupport.processOne(
+      new fyi.osm.sourdough.smartmaps.layers.PlaceLabel(config),
+      TestSupport.node(Map.of("place", "city", "name", "Köln", "name:de", "Köln"))
+    );
+    var attrs = feature.getAttrsAtZoom(14);
+    assertEquals("Köln", attrs.get("name"));
+    assertEquals("Köln", attrs.get("name:de"));
+    assertEquals("Köln", attrs.get("name_de"));
+    assertFalse(attrs.containsKey("name:en"), "a missing translation emits nothing");
   }
 
   @Test

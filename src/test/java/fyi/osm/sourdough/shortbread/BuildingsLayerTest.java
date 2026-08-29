@@ -7,8 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import fyi.osm.sourdough.Schema;
 import fyi.osm.sourdough.TestSupport;
-import fyi.osm.sourdough.shortbread.buildings3d.BuildingDimensionParser;
-import fyi.osm.sourdough.shortbread.buildings3d.BuildingMetrics;
+import fyi.osm.sourdough.common.buildings3d.BuildingDimensionParser;
+import fyi.osm.sourdough.common.buildings3d.BuildingMetrics;
 import fyi.osm.sourdough.shortbread.layers.BuildingParts;
 import fyi.osm.sourdough.shortbread.layers.Buildings;
 import java.util.List;

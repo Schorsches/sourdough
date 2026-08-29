@@ -9,7 +9,7 @@ import fyi.osm.sourdough.shortbread.ShortbreadConfiguration;
 import fyi.osm.sourdough.shortbread.ShortbreadLayer;
 import fyi.osm.sourdough.shortbread.ShortbreadNames;
 import fyi.osm.sourdough.shortbread.ShortbreadSchema;
-import fyi.osm.sourdough.shortbread.WayArea;
+import fyi.osm.sourdough.common.WayArea;
 
 /**
  * Shortbread `boundary_labels`: label points for country and state areas.

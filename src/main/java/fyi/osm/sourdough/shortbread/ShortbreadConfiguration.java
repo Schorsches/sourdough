@@ -1,6 +1,7 @@
 package fyi.osm.sourdough.shortbread;
 
 import fyi.osm.sourdough.Schema;
+import fyi.osm.sourdough.common.buildings3d.BuildingDimensionParser;
 import java.util.List;
 
 /**
@@ -21,7 +22,8 @@ public record ShortbreadConfiguration(
 ) {
 
   /** The documented default assumption for one above-ground building level. */
-  public static final double DEFAULT_LEVEL_HEIGHT_METERS = 3.0;
+  public static final double DEFAULT_LEVEL_HEIGHT_METERS =
+    BuildingDimensionParser.DEFAULT_LEVEL_HEIGHT_METERS;
 
   /** Most buildings have no dimensions at all, so a usable map needs an estimate. */
   public static final boolean DEFAULT_ESTIMATE_MISSING_HEIGHTS = true;

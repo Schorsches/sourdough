@@ -3,10 +3,10 @@ package fyi.osm.sourdough.shortbread;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import fyi.osm.sourdough.shortbread.mapping.LandKinds;
-import fyi.osm.sourdough.shortbread.mapping.PoiKinds;
-import fyi.osm.sourdough.shortbread.mapping.SiteKinds;
-import fyi.osm.sourdough.shortbread.mapping.StreetKinds;
+import fyi.osm.sourdough.common.mapping.LandKinds;
+import fyi.osm.sourdough.common.mapping.PoiKinds;
+import fyi.osm.sourdough.common.mapping.SiteKinds;
+import fyi.osm.sourdough.common.mapping.StreetKinds;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;

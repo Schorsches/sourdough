@@ -1,8 +1,8 @@
 package fyi.osm.sourdough.shortbread;
 
 import com.onthegomap.planetiler.ForwardingProfile;
-import fyi.osm.sourdough.shortbread.buildings3d.BuildingDimensionParser;
-import fyi.osm.sourdough.shortbread.buildings3d.BuildingMetrics;
+import fyi.osm.sourdough.common.buildings3d.BuildingDimensionParser;
+import fyi.osm.sourdough.common.buildings3d.BuildingMetrics;
 import fyi.osm.sourdough.shortbread.layers.Addresses;
 import fyi.osm.sourdough.shortbread.layers.Aerialways;
 import fyi.osm.sourdough.shortbread.layers.Boundaries;

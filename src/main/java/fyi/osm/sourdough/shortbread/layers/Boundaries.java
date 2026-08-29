@@ -8,12 +8,11 @@ import com.onthegomap.planetiler.geo.GeometryException;
 import com.onthegomap.planetiler.reader.SourceFeature;
 import com.onthegomap.planetiler.reader.osm.OsmElement;
 import com.onthegomap.planetiler.reader.osm.OsmRelationInfo;
-import com.onthegomap.planetiler.util.Parse;
+import fyi.osm.sourdough.common.BoundaryRelations;
 import fyi.osm.sourdough.shortbread.ShortbreadConfiguration;
 import fyi.osm.sourdough.shortbread.ShortbreadLayer;
 import fyi.osm.sourdough.shortbread.ShortbreadSchema;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Shortbread `boundaries`: country and state boundary lines.
@@ -34,9 +33,6 @@ public class Boundaries
     super(config);
   }
 
-  /** Shortbread only carries national and state boundaries. */
-  private static final Set<Integer> ADMIN_LEVELS = Set.of(2, 4);
-
   private static final int COUNTRY_MIN_ZOOM = 0;
   private static final int STATE_MIN_ZOOM = 7;
 
@@ -45,65 +41,28 @@ public class Boundaries
     return ShortbreadSchema.BOUNDARIES;
   }
 
-  /**
-   * A parent boundary relation. `adminLevel` is null for a disputed relation that
-   * carries no admin_level, which the schema treats as applying to any member way.
-   */
-  public record BoundaryRelation(long id, Integer adminLevel, boolean disputed)
-    implements OsmRelationInfo {}
-
   @Override
   public List<OsmRelationInfo> preprocessOsmRelation(OsmElement.Relation relation) {
-    if (!relation.hasTag("type", "boundary")) return null;
-
-    Integer adminLevel = Parse.parseIntOrNull(relation.getString("admin_level"));
-    boolean administrative = relation.hasTag("boundary", "administrative");
-    boolean disputed = relation.hasTag("boundary", "disputed");
-
-    if (administrative && adminLevel != null && ADMIN_LEVELS.contains(adminLevel)) {
-      return List.of(new BoundaryRelation(relation.id(), adminLevel, false));
-    }
-    // A disputed relation counts either with no admin_level, or at level 2 or 4.
-    if (disputed && (adminLevel == null || ADMIN_LEVELS.contains(adminLevel))) {
-      return List.of(new BoundaryRelation(relation.id(), adminLevel, true));
-    }
-    return null;
+    return BoundaryRelations.preprocess(relation);
   }
 
   @Override
   public void processFeature(SourceFeature sf, FeatureCollector fc) {
     if (!sf.canBeLine()) return;
 
-    var parents = sf.relationInfo(BoundaryRelation.class);
-    if (parents.isEmpty()) return;
-
-    Integer adminLevel = null;
-    boolean disputed = sf.hasTag("disputed", "yes");
-    for (var member : parents) {
-      var relation = member.relation();
-      if (relation.disputed()) {
-        disputed = true;
-      } else if (relation.adminLevel() != null) {
-        // "the lowest numerical admin_level value of the parent relations"
-        adminLevel = adminLevel == null
-          ? relation.adminLevel()
-          : Math.min(adminLevel, relation.adminLevel());
-      }
-    }
-
-    // A way that is only a member of disputed relations has no administrative level and
-    // is therefore not a boundary line in this schema.
-    if (adminLevel == null) return;
+    var inherited = BoundaryRelations.resolve(sf);
+    if (inherited == null) return;
+    int adminLevel = inherited.adminLevel();
 
     var line = fc.line(name());
     line.setMinZoom(adminLevel == 2 ? COUNTRY_MIN_ZOOM : STATE_MIN_ZOOM);
     line.setMinPixelSize(0);
     line.setBufferPixels(4);
     line.setAttr("admin_level", adminLevel);
-    if (sf.hasTag("maritime", "yes") || sf.hasTag("natural", "coastline")) {
+    if (inherited.maritime()) {
       line.setAttr("maritime", true);
     }
-    if (disputed) {
+    if (inherited.disputed()) {
       line.setAttr("disputed", true);
     }
   }

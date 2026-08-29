@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.onthegomap.planetiler.reader.osm.OsmReader;
 import fyi.osm.sourdough.TestSupport;
+import fyi.osm.sourdough.common.BoundaryRelations;
 import fyi.osm.sourdough.shortbread.layers.Addresses;
 import fyi.osm.sourdough.shortbread.layers.Boundaries;
 import fyi.osm.sourdough.shortbread.layers.Ferries;
@@ -203,7 +204,7 @@ class LayerBehaviourTest {
   // --- boundaries -----------------------------------------------------------
 
   private static List<OsmReader.RelationMember<com.onthegomap.planetiler.reader.osm.OsmRelationInfo>>
-    parents(Boundaries.BoundaryRelation... relations) {
+    parents(BoundaryRelations.BoundaryRelation... relations) {
     return java.util.Arrays.stream(relations)
       .map(r ->
         new OsmReader.RelationMember<com.onthegomap.planetiler.reader.osm.OsmRelationInfo>("outer", r)
@@ -218,8 +219,8 @@ class LayerBehaviourTest {
       TestSupport.wayInRelations(
         Map.of("boundary", "administrative"),
         parents(
-          new Boundaries.BoundaryRelation(1, 4, false),
-          new Boundaries.BoundaryRelation(2, 2, false)
+          new BoundaryRelations.BoundaryRelation(1, 4, false),
+          new BoundaryRelations.BoundaryRelation(2, 2, false)
         )
       )
     );
@@ -233,7 +234,7 @@ class LayerBehaviourTest {
       new Boundaries(CONFIG),
       TestSupport.wayInRelations(
         Map.of("boundary", "administrative"),
-        parents(new Boundaries.BoundaryRelation(1, 4, false))
+        parents(new BoundaryRelations.BoundaryRelation(1, 4, false))
       )
     );
     assertEquals(7, feature.getMinZoom());
@@ -245,7 +246,7 @@ class LayerBehaviourTest {
       new Boundaries(CONFIG),
       TestSupport.wayInRelations(
         Map.of("boundary", "administrative", "natural", "coastline"),
-        parents(new Boundaries.BoundaryRelation(1, 2, false))
+        parents(new BoundaryRelations.BoundaryRelation(1, 2, false))
       )
     );
     assertEquals(true, feature.getAttrsAtZoom(14).get("maritime"));
@@ -257,7 +258,7 @@ class LayerBehaviourTest {
       new Boundaries(CONFIG),
       TestSupport.wayInRelations(
         Map.of("boundary", "administrative", "disputed", "yes"),
-        parents(new Boundaries.BoundaryRelation(1, 2, false))
+        parents(new BoundaryRelations.BoundaryRelation(1, 2, false))
       )
     );
     assertEquals(true, fromWay.getAttrsAtZoom(14).get("disputed"));
@@ -267,9 +268,9 @@ class LayerBehaviourTest {
       TestSupport.wayInRelations(
         Map.of("boundary", "administrative"),
         parents(
-          new Boundaries.BoundaryRelation(1, 2, false),
+          new BoundaryRelations.BoundaryRelation(1, 2, false),
           // A disputed relation with no admin_level still counts.
-          new Boundaries.BoundaryRelation(2, null, true)
+          new BoundaryRelations.BoundaryRelation(2, null, true)
         )
       )
     );
@@ -283,7 +284,7 @@ class LayerBehaviourTest {
         new Boundaries(CONFIG),
         TestSupport.wayInRelations(
           Map.of("boundary", "administrative"),
-          parents(new Boundaries.BoundaryRelation(1, null, true))
+          parents(new BoundaryRelations.BoundaryRelation(1, null, true))
         )
       ).isEmpty()
     );
