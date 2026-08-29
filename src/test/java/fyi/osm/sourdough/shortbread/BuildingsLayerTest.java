@@ -24,7 +24,11 @@ class BuildingsLayerTest {
   }
 
   private static BuildingDimensionParser parser(ShortbreadConfiguration config) {
-    return new BuildingDimensionParser(config.levelHeight(), new BuildingMetrics());
+    return new BuildingDimensionParser(
+      config.levelHeight(),
+      config.estimateMissingHeights(),
+      new BuildingMetrics()
+    );
   }
 
   @Test
@@ -104,10 +108,28 @@ class BuildingsLayerTest {
   }
 
   @Test
-  void aBuildingWithNoDimensionsGetsNoHeightAttribute() {
+  void aBuildingWithNoDimensionsIsEstimatedFromItsType() {
     var feature = TestSupport.processOne(
       layer(Schema.SHORTBREAD_3D),
-      TestSupport.area(Map.of("building", "yes"))
+      TestSupport.area(Map.of("building", "house"))
+    );
+    var attrs = feature.getAttrsAtZoom(14);
+    assertEquals(6.0, attrs.get("height"));
+    assertEquals(true, attrs.get("height_estimated"));
+    assertNull(attrs.get("building_levels"), "an estimate must not invent a level count");
+  }
+
+  @Test
+  void estimatesCanBeTurnedOff() {
+    var config = new ShortbreadConfiguration(
+      Schema.SHORTBREAD_3D,
+      java.util.List.of(),
+      ShortbreadConfiguration.DEFAULT_LEVEL_HEIGHT_METERS,
+      false
+    );
+    var feature = TestSupport.processOne(
+      new Buildings(config, parser(config)),
+      TestSupport.area(Map.of("building", "house"))
     );
     assertNull(feature.getAttrsAtZoom(14).get("height"));
   }

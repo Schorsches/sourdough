@@ -295,14 +295,14 @@ The largest tile stays well under the 1 MB size Planetiler warns at.
 
 The 3D extension's cost varies a great deal by how well a region is mapped in 3D. In
 Luxembourg it is a quarter of a percent overall and 2% on the densest tile; in Berlin,
-which has far denser Simple 3D Buildings coverage, it is 2.8% overall and 24% on the
+which has far denser Simple 3D Buildings coverage, it is 3.2% overall and 24% on the
 densest tile (210 kB to 260 kB). `BUILDINGS_3D.md` has the full comparison; plan for the
 Berlin figures.
 
-Building dimension counters from the Monaco run: 84 explicit heights, 485 derived from
-level counts, 4,120 buildings with no usable dimensions, 1 malformed level count. Note how
-few buildings carry any dimension data at all, which is why no height is invented for the
-rest.
+Building dimension counters from a Berlin run, across 1,121,410 buildings: 14,375 explicit
+heights (1.3%), 259,808 derived from level counts (23.2%), and 847,227 estimated from the
+building type (75.5%). Only a small fraction of buildings carry a measured height, so
+everything derived is marked `height_estimated`; see BUILDINGS_3D.md.
 
 ## Licensing
 

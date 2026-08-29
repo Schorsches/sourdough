@@ -51,9 +51,9 @@ every building on the planet.
 
 | Attribute | Type | From | Present when |
 |---|---|---|---|
-| `height` | number (m) | `height`, `building:height`, or derived from `building:levels` | a valid height exists or can be derived |
+| `height` | number (m) | `height`, `building:height`, `building:levels`, or the building type | always, unless estimation is turned off |
 | `min_height` | number (m) | `min_height`, `building:min_height`, or `building:min_level` | greater than zero |
-| `height_estimated` | boolean | — | only when `height` was derived from a level count |
+| `height_estimated` | boolean | — | when `height` was derived rather than measured |
 | `building_levels` | integer | `building:levels` | tagged and valid |
 | `roof_height` | number (m) | `roof:height`, or `roof:levels` | valid and less than `height` |
 | `roof_shape` | string | `roof:shape` | tagged |
@@ -109,11 +109,22 @@ roof:height=2              ->  + 2 m roof
 
 ### Precedence
 
+Every building gets a height, from the best source available:
+
 1. **Explicit height.** `height`, else `building:height`. Units are parsed: `12`, `12 m`,
-   `40 ft`, `12'3"` all work, and a decimal comma (`3,5`) is accepted.
-2. **Level count.** If no valid height exists, `building:levels` × the level height, plus a
-   roof height if one can be established. The result is marked `height_estimated=true`.
-3. **Nothing.** If neither exists, no `height` is emitted at all.
+   `40 ft`, `12'3"` all work, and a decimal comma (`3,5`) is accepted. This is the only
+   case that is measurement.
+2. **Level count.** `building:levels` × the level height, plus a roof height if one can be
+   established. Marked `height_estimated=true`.
+3. **Building type.** A typical storey count for the kind of building it is, × the level
+   height. Marked `height_estimated=true`. See below.
+
+A consumer can tell the three apart without another attribute: no `height_estimated` means
+measured; `height_estimated` with `building_levels` means derived from a level count;
+`height_estimated` without `building_levels` means estimated from the type.
+
+Pass `--estimate-missing-heights false` to stop at step 2, in which case a building with no
+dimensions carries no `height` at all.
 
 Base height uses `min_height`, else `building:min_level` × the level height, else nothing.
 
@@ -128,21 +139,41 @@ The assumed height of one above-ground level is **3.0 m**, defined once as
 
 ## Buildings with no dimensions
 
-Most OSM buildings have neither `height` nor `building:levels`. This implementation
-**emits no height for them** and leaves the fallback to the client:
+Most OSM buildings have neither `height` nor `building:levels` — three quarters of them,
+even in a well-mapped city. Those buildings are estimated from their **building type**,
+because the type is essentially always present and is the one thing that separates a
+garden shed from an apartment block. A single global constant would make them the same
+height.
 
-```js
-'fill-extrusion-height': ['coalesce', ['get', 'height'], 8]
-```
+The table lives in `BuildingTypeDefaults.java` and is expressed in storeys, so it composes
+with the configured level height. A sample at the default 3 m per storey:
 
-The alternative — materializing an estimated `render_height` on every building — was
-rejected on two grounds. It would present a guess as though it were source data, and it
-would add a number to every building on the planet, which is the single largest tile-size
-lever in this schema, to save consumers one expression.
+| Building type | Storeys | Height |
+|---|---|---|
+| `garage`, `shed`, `hut`, `carport`, `kiosk`, `bungalow` | 1 | 3 m |
+| `house`, `detached`, `terrace`, `farm`, `barn` | 2 | 6 m |
+| `retail`, `commercial`, `school`, `civic` | 3 | 9 m |
+| `apartments`, `office`, `hotel`, `hospital`, `university` | 4 | 12 m |
+| `cathedral` | 6 | 18 m |
+| anything else, including `building=yes` | 2 | 6 m |
 
-Provenance is instead carried by `height_estimated`, which appears **only** on the subset
-whose height came from a level count. A building with `height` and no `height_estimated`
-was measured; one with both was derived; one with neither is unknown.
+`building=yes` is by far the most common value and says nothing, so it takes the global
+fallback. Two storeys is a deliberately modest guess: too-tall defaults across a whole city
+read worse than too-short ones.
+
+**These are rendering estimates, not data.** Every one of them is marked
+`height_estimated=true`, and a consumer that wants only measured heights can filter on the
+absence of that flag, or turn estimation off entirely with
+`--estimate-missing-heights false`.
+
+A note on a decision that changed: earlier versions of this document argued against
+materialising estimates, on the grounds that adding a number to every building on the
+planet is the largest tile-size lever in the schema. Measured, that turned out to be wrong
+for *this* kind of estimate. Filling in all 847,227 heightless Berlin buildings cost 0.4%
+of archive size and left the largest tile unchanged, because the estimates come from a
+handful of repeated values that both the MVT value dictionary and gzip compress almost to
+nothing. The argument does still hold for a `render_height` carrying an arbitrary distinct
+number per building, which is why that is not what this does.
 
 ## Malformed data
 
@@ -193,7 +224,8 @@ map.addLayer({
   type: 'fill-extrusion',
   minzoom: 14,
   paint: {
-    // Buildings with no known height still need to draw.
+    // `height` is always present unless estimation was turned off, but coalesce keeps
+    // the style working either way.
     'fill-extrusion-height': ['coalesce', ['get', 'height'], 8],
     'fill-extrusion-base': ['coalesce', ['get', 'min_height'], 0],
     'fill-extrusion-color': ['coalesce', ['get', 'building_colour'], '#cfcfcf'],
@@ -229,11 +261,15 @@ Buildings coverage anywhere in OpenStreetMap:
 
 | | `shortbread-1.1` | `shortbread-1.1-3d` | delta |
 |---|---|---|---|
-| Archive | 69.9 MB | 71.9 MB | +2.8% |
-| Zoom-14 p50 | 7.9 kB | 8.0 kB | +1.3% |
-| Zoom-14 p95 | 95.5 kB | 99.4 kB | +4.1% |
-| Zoom-14 p99 | 133.5 kB | 142.5 kB | +6.7% |
+| Archive | 69.9 MB | 72.2 MB | +3.2% |
+| Zoom-14 p50 | 7.9 kB | 8.1 kB | +2.5% |
+| Zoom-14 p95 | 95.5 kB | 99.6 kB | +4.3% |
+| Zoom-14 p99 | 133.5 kB | 142.8 kB | +7.0% |
 | Zoom-14 largest | 210.2 kB | 260.4 kB | **+23.9%** |
+
+Filling in a height for the three quarters of buildings that have none accounts for only
+0.4 percentage points of that: the same build with `--estimate-missing-heights false` comes
+to +2.8% rather than +3.2%, with an identical largest tile.
 
 So: a fraction of a percent where 3D mapping is sparse, and up to a quarter more on the
 single densest tile where it is not. The largest tile measured anywhere is 260 kB, well
@@ -252,21 +288,23 @@ candidates to drop; `height` and `min_height` are what the layer exists for.
 
 From the same Berlin run, across 1,121,410 buildings read:
 
-| | |
-|---|---|
-| Explicit `height` | 14,375 (1.3%) |
-| Derived from `building:levels` | 259,808 (23.2%) |
-| No usable dimensions at all | 847,227 (75.5%) |
-| Building parts | 36,606 |
+| Height source | Count | Share |
+|---|---|---|
+| Explicit `height` tag | 14,375 | 1.3% |
+| Derived from `building:levels` | 259,808 | 23.2% |
+| Estimated from the building type | 847,227 | 75.5% |
+| No height emitted | 0 | — |
 
-Three quarters of buildings in one of the best-mapped cities in OpenStreetMap have no
-height information. That is the case for a client-side fallback, and against materialising
-an invented height onto every building.
+Only 1.3% of buildings in one of the best-mapped cities in OpenStreetMap carry a measured
+height, and three quarters carry nothing at all. That is why the type-based estimate
+exists, and why `height_estimated` matters: on real data it is the common case, not the
+exception.
 
-The same run exercised the malformed-data handling on real data rather than fixtures: 572
+The same run exercised the malformed-data handling on real data rather than fixtures: 624
 `min_height` values at or above their building's height, 65 oversized roof heights, 35
 unparseable heights and 16 bad level counts, all dropped or corrected, with the build
-completing normally.
+completing normally. (A malformed height falls through to the next source rather than
+leaving the building without one.)
 
 ### Building parts and their parent outline
 

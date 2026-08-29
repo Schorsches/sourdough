@@ -18,6 +18,7 @@ public final class BuildingMetrics {
 
   public static final String HEIGHT_EXPLICIT = "buildings.height.explicit";
   public static final String HEIGHT_FROM_LEVELS = "buildings.height.from_levels";
+  public static final String HEIGHT_FROM_TYPE = "buildings.height.from_type";
   public static final String HEIGHT_ABSENT = "buildings.height.absent";
   public static final String HEIGHT_INVALID = "buildings.height.invalid";
   public static final String MIN_HEIGHT_INVALID = "buildings.min_height.invalid";
@@ -29,6 +30,7 @@ public final class BuildingMetrics {
     for (var name : new String[] {
       HEIGHT_EXPLICIT,
       HEIGHT_FROM_LEVELS,
+      HEIGHT_FROM_TYPE,
       HEIGHT_ABSENT,
       HEIGHT_INVALID,
       MIN_HEIGHT_INVALID,

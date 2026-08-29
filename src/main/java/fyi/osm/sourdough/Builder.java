@@ -179,10 +179,17 @@ public class Builder extends ForwardingProfile {
         );
       }
       var languages = LanguagePresets.resolve(additionalLanguages);
+      boolean estimateHeights = args.getBoolean(
+        "estimate_missing_heights",
+        "estimate a height for buildings that have no dimensions in OSM, from their " +
+        "building type (marked with height_estimated)",
+        ShortbreadConfiguration.DEFAULT_ESTIMATE_MISSING_HEIGHTS
+      );
       var config = new ShortbreadConfiguration(
         schema,
         languages,
-        ShortbreadConfiguration.DEFAULT_LEVEL_HEIGHT_METERS
+        ShortbreadConfiguration.DEFAULT_LEVEL_HEIGHT_METERS,
+        estimateHeights
       );
       planetiler
         .setProfile(new ShortbreadProfile(config))
