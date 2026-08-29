@@ -90,6 +90,15 @@
         <configuration>
           <!-- Integration and differential suites are opt-in; see USAGE.md -->
           <excludedGroups>${excludedTestGroups}</excludedGroups>
+          <!--
+            Planetiler escalates recoverable geometry problems to AssertionErrors when
+            assertions are enabled, to surface them while developing a profile. A clipped
+            OSM extract legitimately contains ways referencing nodes outside it, which a
+            production run counts as a data error and skips. Disable assertions inside
+            Planetiler so the integration tests behave the way a real run does; assertions
+            stay enabled for this project's own code.
+          -->
+          <argLine>-da:com.onthegomap.planetiler...</argLine>
         </configuration>
       </plugin>
 

@@ -95,6 +95,23 @@ This runs the unit, layer and schema-conformance suites. The conformance test ch
 generated features against the declarative schema table in `ShortbreadSchema.java`:
 layer names, geometry types, attribute names and types, and zoom ranges.
 
+Two further suites are excluded by default, because one needs input data and the other is
+slow enough to be worth running deliberately:
+
+```bash
+# Generate a real tileset and inspect it. Needs data/sources/<area>.osm.pbf and
+# data/sources/water-polygons-split-3857.zip; skips cleanly if they are absent.
+# Prints tile-size distributions per zoom.
+mvn test -DexcludedTestGroups= -Dtest=ShortbreadIntegrationTest
+mvn test -DexcludedTestGroups= -Dtest=ShortbreadIntegrationTest -Dintegration.area=luxembourg
+
+# Compare the tag selection against the Shortbread project's own taginfo.json.
+mvn test -DexcludedTestGroups= -Dtest=TaginfoDifferentialTest
+
+# Everything.
+mvn test -DexcludedTestGroups=
+```
+
 ## Deploying and serving tiles
 
 Once you've generated a `.pmtiles` file, you need to host it somewhere so that a client (like a web browser or mobile app) can fetch the tiles it needs to display your map.
