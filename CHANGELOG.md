@@ -13,6 +13,11 @@ This file documents notable changes to the Sourdough schema and its reference im
   extension defined by this repository, not part of Shortbread 1.1. See
   [BUILDINGS_3D.md](./BUILDINGS_3D.md).
 - Add a test suite and a CI workflow that runs it. The repository previously had neither.
+- Build the container image in two stages, on JDK 21 rather than 22. The JDK 22 base image
+  is non-LTS and its tag stopped being rebuilt when 22 went end-of-life, so the published
+  image had been shipping an unpatched JDK and Alpine userland for close to two years. The
+  runtime stage is now a JRE containing only the jar, which also drops Maven, the compiler
+  and the source tree from the published image. No change to how the image is run.
 
 ## v0.4.0
 

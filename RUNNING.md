@@ -35,7 +35,7 @@ One command. `--download` fetches the input data the first time and reuses it af
 ```bash
 java -jar target/sourdough-builder-HEAD-with-deps.jar \
   --download \
-  --area luxembourg \
+  --area bangladesh \
   --schema smartmaps
 ```
 
@@ -43,10 +43,10 @@ That writes **`data/smartmaps.pmtiles`**.
 
 Two things are downloaded into `data/sources/`, and only once:
 
-| File | What it is | Size |
-|---|---|---|
-| `<area>.osm.pbf` | the OpenStreetMap extract, from [Geofabrik](https://www.geofabrik.de/) | 1 MB – 4 GB |
-| `water-polygons-split-3857.zip` | global coastlines, from [osmdata.openstreetmap.de](https://osmdata.openstreetmap.de/) | 886 MB |
+| File                            | What it is                                                                            | Size        |
+| ------------------------------- | ------------------------------------------------------------------------------------- | ----------- |
+| `<area>.osm.pbf`                | the OpenStreetMap extract, from [Geofabrik](https://www.geofabrik.de/)                | 1 MB – 4 GB |
+| `water-polygons-split-3857.zip` | global coastlines, from [osmdata.openstreetmap.de](https://osmdata.openstreetmap.de/) | 886 MB      |
 
 The coastline file is global and the same for every region, so the second build of any
 area is much faster than the first.
@@ -65,12 +65,12 @@ $J --schema shortbread-1.1-3d     # → data/shortbread-1.1-3d.pmtiles
 $J --schema smartmaps             # → data/smartmaps.pmtiles
 ```
 
-| Schema | Use it when | Maxzoom |
-|---|---|---|
-| `sourdough` | you want everything, and you are writing your own style | 15 |
-| `shortbread-1.1` | you want to use an existing [Shortbread](https://shortbread-tiles.org/) style | 14 |
-| `shortbread-1.1-3d` | as above, plus extruded buildings | 14 |
-| `smartmaps` | you have a style written for the SmartMaps layout | 14 |
+| Schema              | Use it when                                                                   | Maxzoom |
+| ------------------- | ----------------------------------------------------------------------------- | ------- |
+| `sourdough`         | you want everything, and you are writing your own style                       | 15      |
+| `shortbread-1.1`    | you want to use an existing [Shortbread](https://shortbread-tiles.org/) style | 14      |
+| `shortbread-1.1-3d` | as above, plus extruded buildings                                             | 14      |
+| `smartmaps`         | you have a style written for the SmartMaps layout                             | 14      |
 
 Add `--output my-tiles.pmtiles` to put the archive somewhere else, and `--force` to
 overwrite one that already exists.
@@ -127,17 +127,17 @@ java -jar target/sourdough-builder-HEAD-with-deps.jar \
 --polygon my-region.poly             # a .poly file, for a non-rectangular area
 ```
 
-Both cut down the *output*; the whole extract is still read.
+Both cut down the _output_; the whole extract is still read.
 
 ## 5. Sizing: what to expect
 
 Measured on a modest 4-core, 16 GB container — a laptop will be comparable or better:
 
-| Region | Extract | Build time | `smartmaps` archive |
-|---|---|---|---|
-| Monaco | 1.1 MB | ~1.5 min | 459 kB |
-| Berlin | 173 MB | ~1 min* | 84 MB |
-| Luxembourg | 54 MB | ~1 min* | — |
+| Region     | Extract | Build time | `smartmaps` archive |
+| ---------- | ------- | ---------- | ------------------- |
+| Monaco     | 1.1 MB  | ~1.5 min   | 459 kB              |
+| Berlin     | 173 MB  | ~1 min\*   | 84 MB               |
+| Luxembourg | 54 MB   | ~1 min\*   | —                   |
 
 \* after the coastline file is already downloaded. Monaco's 1.5 minutes is almost entirely
 the one-off 886 MB coastline download and read.
@@ -150,19 +150,19 @@ properly; the useful knobs are `--threads`, `--storage=mmap|ram|direct`,
 
 ### When it goes wrong
 
-| Symptom | Cause and fix |
-|---|---|
-| Fails during download, naming an area | The Geofabrik name is wrong. Check it at <https://download.geofabrik.de/>. |
-| `... has a fixed maximum zoom of 14` | You passed `--maxzoom 15` or higher to a fixed-zoom schema. Drop the flag — clients overzoom above 14. |
-| `Unknown schema 'shortbread'` | Schema ids are exact: `shortbread-1.1`, not `shortbread`. The error lists the valid values. |
-| Output file already exists | Add `--force`, or choose a different `--output`. |
-| `OutOfMemoryError`, or very slow | Give the JVM more heap (`java -Xmx8g -jar ...`), lower `--threads`, or set `--storage=mmap`. |
-| Runs out of disk mid-build | Budget ~6× the extract size. `--tmpdir` can point at a different volume. |
-| `--language` seems to be ignored | It applies to `sourdough` only; the other three define `name` as the OSM tag. The run logs a warning saying so. Use `--additional-languages`. |
+| Symptom                               | Cause and fix                                                                                                                                 |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Fails during download, naming an area | The Geofabrik name is wrong. Check it at <https://download.geofabrik.de/>.                                                                    |
+| `... has a fixed maximum zoom of 14`  | You passed `--maxzoom 15` or higher to a fixed-zoom schema. Drop the flag — clients overzoom above 14.                                        |
+| `Unknown schema 'shortbread'`         | Schema ids are exact: `shortbread-1.1`, not `shortbread`. The error lists the valid values.                                                   |
+| Output file already exists            | Add `--force`, or choose a different `--output`.                                                                                              |
+| `OutOfMemoryError`, or very slow      | Give the JVM more heap (`java -Xmx8g -jar ...`), lower `--threads`, or set `--storage=mmap`.                                                  |
+| Runs out of disk mid-build            | Budget ~6× the extract size. `--tmpdir` can point at a different volume.                                                                      |
+| `--language` seems to be ignored      | It applies to `sourdough` only; the other three define `name` as the OSM tag. The run logs a warning saying so. Use `--additional-languages`. |
 
 ## 6. Running with Docker
 
-No Java or Maven needed. The image's entrypoint *is* the builder, so every flag above works
+No Java or Maven needed. The image's entrypoint _is_ the builder, so every flag above works
 unchanged — you just mount a directory for `data/`.
 
 **Build the image from this checkout.** This is the path you want:
@@ -178,7 +178,7 @@ docker run --rm -v "$PWD/data:/tiles/data" \
 The archive appears at `data/smartmaps.pmtiles` on your machine.
 
 > **Why not just pull a published image?** `ghcr.io/jake-low/sourdough-builder` is built
-> from the *upstream* repository, and this fork does not publish an image of its own — see
+> from the _upstream_ repository, and this fork does not publish an image of its own — see
 > [CI.md](./CI.md) for why forks build the image but skip the push. So the published image
 > will not have the schemas added here. Build locally, or change `IMAGE_NAME` and the fork
 > guards as CI.md describes if you want to publish your own.

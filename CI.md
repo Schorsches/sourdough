@@ -65,9 +65,20 @@ To publish from a fork, pick one:
 Either way, change both places: a login without a push wastes a step, and a push without
 a login fails.
 
+## What the image contains
+
+`Dockerfile` is a two-stage build. The jar is assembled in a Maven image; only the jar is
+copied into a JRE image, at a fixed path the entrypoint names. So Maven, the compiler, the
+source tree and the `.m2` cache exist while the image is being built and are absent from
+the image that is published.
+
+The reasoning behind the base images — why JDK 21 and not later, why Alpine on both stages,
+and why there is no `USER` directive — is commented in the Dockerfile itself, next to the
+lines it applies to.
+
 ## Why the image build skips tests
 
-`Dockerfile` runs:
+`Dockerfile` runs, in the build stage:
 
 ```dockerfile
 RUN mvn dependency:go-offline -B
