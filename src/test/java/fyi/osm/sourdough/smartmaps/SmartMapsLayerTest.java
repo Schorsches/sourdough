@@ -296,6 +296,22 @@ class SmartMapsLayerTest {
       assertEquals(true, attrs.get("intermittent"));
     }
 
+    /**
+     * The declared booleans are present either way round, rather than omitted when false.
+     * A style can then ask `intermittent == false` instead of having to know that an absent
+     * key means the same thing. This is the one place in the repository that deviates from
+     * the omit-rather-than-default convention; SMARTMAPS_SCHEMA.md records why.
+     */
+    @Test
+    void aPermanentWaterBodyCarriesIntermittentFalseRatherThanNothing() {
+      var attrs = attrs(
+        new WaterPolygons(CONFIG),
+        area(Map.of("natural", "water", "name", "Lake"), 0.01),
+        SmartMapsSchema.WATER_POLYGONS
+      );
+      assertEquals(false, attrs.get("intermittent"));
+    }
+
     @Test
     void aNamedWaterwayAlsoProducesALineLabel() {
       var label = attrs(
@@ -371,7 +387,10 @@ class SmartMapsLayerTest {
         SmartMapsSchema.TRANSPORT
       );
       assertEquals(true, attrs.get("rail"));
-      assertNull(attrs.get("oneway"));
+      // The OSM oneway=yes above is deliberately not honoured on rail. The field is present
+      // as false rather than absent, which is this layer's contract for booleans, but the
+      // rule it encodes is unchanged.
+      assertEquals(false, attrs.get("oneway"));
     }
 
     @Test
@@ -522,7 +541,7 @@ class SmartMapsLayerTest {
     }
 
     @Test
-    void conditionalAttributesStayConditional() {
+    void atmIsABankAttributeAndIsFalseRatherThanAbsentElsewhere() {
       var bank = attrs(
         new Poi(CONFIG),
         node(Map.of("amenity", "bank", "atm", "yes")),
@@ -530,12 +549,15 @@ class SmartMapsLayerTest {
       );
       assertEquals(true, bank.get("atm"));
 
+      // Still a bank attribute -- the shop's own atm=yes tag is deliberately not honoured.
+      // What changed is how "no" is spelled: false rather than absent, because this layer
+      // emits every declared boolean on every feature. See SMARTMAPS_SCHEMA.md.
       var shop = attrs(
         new Poi(CONFIG),
         node(Map.of("shop", "supermarket", "atm", "yes")),
         SmartMapsSchema.POI
       );
-      assertNull(shop.get("atm"), "atm is a bank attribute in this layout");
+      assertEquals(false, shop.get("atm"), "atm is a bank attribute in this layout");
     }
   }
 
@@ -563,7 +585,7 @@ class SmartMapsLayerTest {
       );
       assertEquals(12.0, attrs.get("render_height"));
       assertEquals(true, attrs.get("3d"));
-      assertNull(attrs.get("building:part"));
+      assertEquals(false, attrs.get("building:part"), "a whole building is not a part");
     }
 
     @Test
@@ -586,7 +608,7 @@ class SmartMapsLayerTest {
         attrs.get("render_height") instanceof Double h && h > 0,
         "estimation is on by default because this layout has no factual height field"
       );
-      assertNull(attrs.get("3d"), "an estimate is not Simple 3D Buildings information");
+      assertEquals(false, attrs.get("3d"), "an estimate is not Simple 3D Buildings information");
     }
 
     @Test

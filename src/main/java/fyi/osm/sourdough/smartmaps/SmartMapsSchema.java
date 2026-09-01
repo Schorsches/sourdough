@@ -274,6 +274,26 @@ public final class SmartMapsSchema {
     return map;
   }
 
+  /**
+   * The boolean attributes a layer declares.
+   *
+   * These are emitted on every feature in the layer, true or false, rather than only where
+   * true -- the one deviation from this repository's omit-rather-than-default convention,
+   * recorded with its reason in SMARTMAPS_SCHEMA.md. Derived from the table above so there
+   * is no second list to keep in step, and driven off by the conformance test that holds
+   * the handlers to it.
+   */
+  public static List<String> booleanAttributes(String name) {
+    return layer(name)
+      .attributes()
+      .entrySet()
+      .stream()
+      .filter(e -> e.getValue() == AttrType.BOOLEAN)
+      .map(Map.Entry::getKey)
+      .sorted()
+      .toList();
+  }
+
   public static LayerSpec layer(String name) {
     return LAYERS.stream()
       .filter(l -> l.name().equals(name))

@@ -35,7 +35,7 @@ One command. `--download` fetches the input data the first time and reuses it af
 ```bash
 java -jar target/sourdough-builder-HEAD-with-deps.jar \
   --download \
-  --area bangladesh \
+  --area luxembourg \
   --schema smartmaps
 ```
 
@@ -148,6 +148,55 @@ undertaking** — several hours, >64 GB RAM and >1 TB of SSD. Planetiler's
 properly; the useful knobs are `--threads`, `--storage=mmap|ram|direct`,
 `--nodemap_storage`, and `--tmpdir` pointed at fast disk.
 
+### Running from WSL
+
+On WSL, where `data/` lives matters more than the hardware does. A path under `/mnt/c` is a
+Windows drive reached over a 9p mount, and Planetiler memory-maps its temporary files
+(`node.db`, `multipolygon.db`, `feature.db`) — the one access pattern that mount handles
+worst. Reading the 886 MB coastline archive across it took 2m12s of an otherwise 5m23s
+Monaco build.
+
+Every input and output path is resolved relative to the working directory, so no flags are
+needed to fix this. Build from somewhere on the Linux filesystem instead:
+
+```bash
+mkdir -p ~/tiles && cd ~/tiles
+java -jar /mnt/c/path/to/sourdough/target/sourdough-builder-HEAD-with-deps.jar \
+  --download --area bangladesh --schema smartmaps
+```
+
+Sources, `data/tmp` and the finished archive all land on ext4; only the jar is read from
+`/mnt/c`, once at startup. The checkout can stay on the Windows drive — `mvn package` is not
+the slow part.
+
+**Where the archive ends up.** On the Linux filesystem, which means it does not appear under
+`C:\...` in File Explorer — the usual first surprise. WSL files are reachable from Windows
+only through the `\\wsl.localhost\` network path:
+
+```text
+\\wsl.localhost\<distro>\home\<user>\tiles\data
+```
+
+If you would rather the finished archive sat on the Windows side, point `--output` at it.
+Writing the archive is a single sequential pass, so it costs little across the mount, while
+the temp I/O that actually hurts stays on ext4:
+
+```bash
+cd ~/tiles
+java -jar /mnt/c/path/to/sourdough/target/sourdough-builder-HEAD-with-deps.jar \
+  --download --area bangladesh --schema smartmaps \
+  --output /mnt/c/path/to/sourdough/data/bangladesh.pmtiles
+```
+
+Two more things that catch people out:
+
+- The integration and differential suites resolve `data/sources/` against the **checkout**,
+  so moving your sources hides them and those suites quietly skip instead of failing.
+  Symlink it back: `ln -s ~/tiles/data/sources data/sources`.
+- The Linux filesystem is a virtual disk stored on `C:` that grows on demand. `df` inside
+  WSL reports its virtual size, not the space actually available — `df -h /mnt/c` is the
+  real budget. It also does not shrink again once a build's temp files are deleted.
+
 ### When it goes wrong
 
 | Symptom                               | Cause and fix                                                                                                                                 |
@@ -171,11 +220,16 @@ unchanged — you just mount a directory for `data/`.
 docker build -t sourdough-builder .
 
 mkdir -p data
-docker run --rm -v "$PWD/data:/tiles/data" \
+docker run --rm --user "$(id -u):$(id -g)" -v "$PWD/data:/tiles/data" \
   sourdough-builder --download --area luxembourg --schema smartmaps
 ```
 
 The archive appears at `data/smartmaps.pmtiles` on your machine.
+
+> Keep the `--user` flag. The image has no `USER` of its own, so without it the container
+> runs as root and leaves the downloaded sources and `data/tmp/` owned by root. Your next
+> build — in Docker or not — then fails with `AccessDeniedException` on files it is not
+> allowed to delete, and undoing that needs `sudo`.
 
 > **Why not just pull a published image?** `ghcr.io/jake-low/sourdough-builder` is built
 > from the _upstream_ repository, and this fork does not publish an image of its own — see

@@ -128,6 +128,11 @@ reach `postProcess` — which is why the post-processing bug above survived them
 - Attributes are **omitted** rather than set to a default. On a planet-scale tileset an
   attribute set to its default costs bytes on every feature and tells a consumer nothing
   an absent attribute does not.
+  - One scoped exception: **SmartMaps booleans** are always present, `true` or `false`,
+    because omit-when-false makes `["==", ["get", "x"], false]` silently match nothing in a
+    style. Booleans only, SmartMaps only; strings and numerics follow the rule above, and
+    the other schemas are unaffected. See SMARTMAPS_SCHEMA.md for the full reasoning and
+    `SmartMapsSchema.booleanAttributes` for the list.
 - Deviations from a specification get recorded in that schema's doc, with the reason. If
   you cannot write the reason, reconsider the deviation.
 - Commit messages here explain the reasoning, not just the change.

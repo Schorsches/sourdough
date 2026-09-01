@@ -85,9 +85,7 @@ public class Land extends SmartMapsLayer implements ForwardingProfile.LayerPostP
 
     // Passthrough tags, so a style can tell apart features sharing a kind.
     setIfPresent(sf, polygon, "boundary");
-    if (sf.hasTag("maritime", "yes")) {
-      polygon.setAttr("maritime", true);
-    }
+    polygon.setAttr("maritime", sf.hasTag("maritime", "yes"));
     if (layer.equals(SmartMapsSchema.LANDUSE)) {
       for (var key : List.of("amenity", "landuse", "leisure", "tourism", "sport")) {
         setIfPresent(sf, polygon, key);

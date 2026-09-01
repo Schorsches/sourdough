@@ -140,18 +140,14 @@ public class Transport extends SmartMapsLayer implements ForwardingProfile.Layer
     line.setSortKey(ZOrder.sortKey(sf, street.kind()));
 
     line.setAttr("kind", street.kind());
-    if (street.rail()) {
-      line.setAttr("rail", true);
-    }
-    if (street.link()) {
-      line.setAttrWithMinzoom("link", true, DETAIL_MIN_ZOOM);
-    }
-    if (Booleans.tunnel(sf)) {
-      line.setAttrWithMinzoom("tunnel", true, DETAIL_MIN_ZOOM);
-    }
-    if (Booleans.bridge(sf)) {
-      line.setAttrWithMinzoom("bridge", true, DETAIL_MIN_ZOOM);
-    }
+    // Present either way round rather than only when true; see SMARTMAPS_SCHEMA.md. The
+    // zoom-scoped ones keep their minzoom: below it neither true nor false is emitted,
+    // because claiming `tunnel=false` for a tunnel that is merely not drawn yet would be
+    // wrong in a way an absent attribute is not.
+    line.setAttr("rail", street.rail());
+    line.setAttrWithMinzoom("link", street.link(), DETAIL_MIN_ZOOM);
+    line.setAttrWithMinzoom("tunnel", Booleans.tunnel(sf), DETAIL_MIN_ZOOM);
+    line.setAttrWithMinzoom("bridge", Booleans.bridge(sf), DETAIL_MIN_ZOOM);
 
     setStringIfPresent(sf, line, "tracktype", DETAIL_MIN_ZOOM);
     setStringIfPresent(sf, line, "surface", DETAIL_MIN_ZOOM);
@@ -165,14 +161,16 @@ public class Transport extends SmartMapsLayer implements ForwardingProfile.Layer
       setStringIfPresent(sf, line, "construction", 0);
     }
 
-    if (!street.rail()) {
-      if (Booleans.oneway(sf)) {
-        line.setAttrWithMinzoom("oneway", true, ONEWAY_MIN_ZOOM);
-      }
-      if (Booleans.onewayReverse(sf)) {
-        line.setAttrWithMinzoom("oneway_reverse", true, ONEWAY_MIN_ZOOM);
-      }
-    }
+    // Oneway stays a road concept here: a railway never reports oneway=true even where OSM
+    // tags one, which railNeverCarriesOneway pins. It still carries the field as false,
+    // because every feature in this layer carries every boolean the layer declares.
+    boolean road = !street.rail();
+    line.setAttrWithMinzoom("oneway", road && Booleans.oneway(sf), ONEWAY_MIN_ZOOM);
+    line.setAttrWithMinzoom(
+      "oneway_reverse",
+      road && Booleans.onewayReverse(sf),
+      ONEWAY_MIN_ZOOM
+    );
 
     // The layout has bicycle and horse access and no motorcar or foot, so only those two
     // are evaluated. Access is a highway concept; rail and aeroways never carry it.
@@ -193,8 +191,15 @@ public class Transport extends SmartMapsLayer implements ForwardingProfile.Layer
     polygon.setSortKey(ZOrder.sortKey(sf, kind));
     polygon.setAttr("kind", kind);
 
-    if (Booleans.tunnel(sf)) polygon.setAttr("tunnel", true);
-    if (Booleans.bridge(sf)) polygon.setAttr("bridge", true);
+    polygon.setAttr("tunnel", Booleans.tunnel(sf));
+    polygon.setAttr("bridge", Booleans.bridge(sf));
+    // The remaining transport booleans describe a line's direction and role, which an area
+    // does not have. They are still emitted, because the layer's contract is that every
+    // feature carries every declared boolean.
+    polygon.setAttr("rail", false);
+    polygon.setAttr("link", false);
+    polygon.setAttr("oneway", false);
+    polygon.setAttr("oneway_reverse", false);
     setStringIfPresent(sf, polygon, "service", 0);
     setStringIfPresent(sf, polygon, "surface", 0);
     SmartMapsNames.setNames(sf, polygon, config.languages());
@@ -216,6 +221,14 @@ public class Transport extends SmartMapsLayer implements ForwardingProfile.Layer
     point.setMinZoom(stop.minZoom());
     point.setBufferPixels(16);
     point.setAttr("kind", stop.kind());
+    // A stop can genuinely be under a bridge or in a tunnel, so those are read from tags.
+    // The rest describe a line and are false for a point.
+    point.setAttr("tunnel", Booleans.tunnel(sf));
+    point.setAttr("bridge", Booleans.bridge(sf));
+    point.setAttr("rail", false);
+    point.setAttr("link", false);
+    point.setAttr("oneway", false);
+    point.setAttr("oneway_reverse", false);
     SmartMapsNames.setNames(sf, point, config.languages());
 
     setStringIfPresent(sf, point, "iata", 0);

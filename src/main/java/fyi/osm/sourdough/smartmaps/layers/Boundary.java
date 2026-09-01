@@ -57,8 +57,8 @@ public class Boundary
     line.setMinPixelSize(0);
     line.setBufferPixels(4);
     line.setAttr("admin_level", inherited.adminLevel());
-    if (inherited.maritime()) line.setAttr("maritime", true);
-    if (inherited.disputed()) line.setAttr("disputed", true);
+    line.setAttr("maritime", inherited.maritime());
+    line.setAttr("disputed", inherited.disputed());
   }
 
   @Override

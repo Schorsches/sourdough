@@ -195,6 +195,36 @@ class SmartMapsConformanceTest {
     }
   }
 
+  /**
+   * The reverse of the check above, and the one that was missing.
+   *
+   * {@code everyEmittedAttributeIsDefinedWithTheRightType} proves emitted is a subset of
+   * declared. Nothing proved the other direction, so an attribute could be declared in the
+   * table, pass TileJsonConformanceTest against the source document, and never be produced
+   * by any handler -- with no failure anywhere. That is the same silent-success shape as
+   * the post-processing bug recorded in CLAUDE.md.
+   *
+   * Booleans are checked rather than every attribute because they are the ones with a
+   * total contract: a string is absent when the OSM tag is absent, but a boolean is always
+   * either true or false, so the layout emits it on every feature in the layer. Checked at
+   * MAXZOOM, where the zoom-scoped ones on `transport` are present.
+   */
+  @Test
+  void everyDeclaredBooleanIsPresentOnEveryFeature() {
+    var problems = new ArrayList<String>();
+    for (var feature : generate()) {
+      var attrs = feature.getAttrsAtZoom(SmartMapsSchema.MAXZOOM);
+      for (var key : SmartMapsSchema.booleanAttributes(feature.getLayer())) {
+        if (!attrs.containsKey(key)) {
+          problems.add(feature.getLayer() + "." + key + " is declared but not emitted");
+        }
+      }
+    }
+    if (!problems.isEmpty()) {
+      fail(String.join("\n", new TreeSet<>(problems)));
+    }
+  }
+
   @Test
   void noFeatureAppearsBelowItsLayersMinimumZoom() {
     for (var feature : generate()) {
@@ -252,6 +282,15 @@ class SmartMapsConformanceTest {
       fyi.osm.sourdough.smartmaps.layers.WaterPolygons.OCEAN_KIND,
       ocean.getAttrsAtZoom(0).get("kind")
     );
+    // Ocean is also the one path everyDeclaredBooleanIsPresentOnEveryFeature cannot see,
+    // because it is not reached from an OSM fixture, so the layer's boolean contract is
+    // checked here instead.
+    for (var key : SmartMapsSchema.booleanAttributes(SmartMapsSchema.WATER_POLYGONS)) {
+      assertTrue(
+        ocean.getAttrsAtZoom(0).containsKey(key),
+        "ocean is missing the declared boolean " + key
+      );
+    }
   }
 
   /**

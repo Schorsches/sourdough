@@ -96,8 +96,8 @@ public class Building extends SmartMapsLayer {
     polygon.setMinPixelSize(isPart && !isBuilding ? 0.25 : 0.5);
     polygon.setBufferPixels(8);
 
+    polygon.setAttr("building:part", isPart);
     if (isPart) {
-      polygon.setAttr("building:part", true);
       metrics.increment(BuildingMetrics.BUILDING_PARTS_EMITTED);
     }
 
@@ -108,12 +108,8 @@ public class Building extends SmartMapsLayer {
     if (parsed.minHeight() != null && parsed.minHeight() > 0) {
       polygon.setAttr("render_min_height", parsed.minHeight());
     }
-    if (has3dInformation(sf)) {
-      polygon.setAttr("3d", true);
-    }
-    if (hasRoofInformation(sf)) {
-      polygon.setAttr("roof", true);
-    }
+    polygon.setAttr("3d", has3dInformation(sf));
+    polygon.setAttr("roof", hasRoofInformation(sf));
 
     SmartMapsNames.setNames(sf, polygon, config.languages());
     setIfPresent(sf, polygon, "addr:housename", "housename");
@@ -121,9 +117,7 @@ public class Building extends SmartMapsLayer {
     for (var key : PASSTHROUGH) {
       setIfPresent(sf, polygon, key, key);
     }
-    if (sf.hasTag("amenity", "bank") && sf.hasTag("atm", "yes")) {
-      polygon.setAttr("atm", true);
-    }
+    polygon.setAttr("atm", sf.hasTag("amenity", "bank") && sf.hasTag("atm", "yes"));
   }
 
   /**

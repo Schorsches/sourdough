@@ -77,7 +77,10 @@ public class WaterPolygons
     fc.polygon(name())
       .setZoomRange(0, SmartMapsSchema.MAXZOOM)
       .setBufferPixels(8)
-      .setAttr("kind", OCEAN_KIND);
+      .setAttr("kind", OCEAN_KIND)
+      // The ocean is never intermittent, but the layer's booleans are present on every
+      // feature in it rather than only where true. See SMARTMAPS_SCHEMA.md.
+      .setAttr("intermittent", false);
   }
 
   @Override
@@ -94,7 +97,7 @@ public class WaterPolygons
     polygon.setMinPixelSize(1.0);
     polygon.setBufferPixels(8);
     polygon.setAttr("kind", kind);
-    if (intermittent) polygon.setAttr("intermittent", true);
+    polygon.setAttr("intermittent", intermittent);
     if (wayArea != null) polygon.setAttr("way_area", wayArea);
     SmartMapsNames.setNames(sf, polygon, config.languages());
 
@@ -103,6 +106,10 @@ public class WaterPolygons
       label.setMinZoom(Math.max(LABEL_MIN_ZOOM, minZoom(kind)));
       label.setBufferPixels(32);
       label.setAttr("kind", kind);
+      // water_label declares tunnel and bridge for the line labels WaterLines contributes.
+      // A polygon's label is neither, but every feature in the layer carries them.
+      label.setAttr("tunnel", false);
+      label.setAttr("bridge", false);
       if (wayArea != null) {
         label.setAttr("way_area", wayArea);
         // Largest first.

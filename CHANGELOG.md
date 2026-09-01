@@ -17,7 +17,20 @@ This file documents notable changes to the Sourdough schema and its reference im
   is non-LTS and its tag stopped being rebuilt when 22 went end-of-life, so the published
   image had been shipping an unpatched JDK and Alpine userland for close to two years. The
   runtime stage is now a JRE containing only the jar, which also drops Maven, the compiler
-  and the source tree from the published image. No change to how the image is run.
+  and the source tree from the published image.
+- Document `--user` on the container run. The image has no `USER`, so without it the
+  container writes downloaded sources and `data/tmp/` into the bind mount as root, and the
+  next build by an ordinary user fails with `AccessDeniedException` on files it cannot
+  delete. See [RUNNING.md](./RUNNING.md#6-running-with-docker).
+- SmartMaps now emits every boolean a layer declares on every feature in that layer, `true`
+  or `false`, instead of omitting it when false. A permanent lake carries
+  `intermittent=false` rather than no key at all, so a style can test `== false` instead of
+  having to know that an absent attribute means the same thing. Booleans only, and SmartMaps
+  only — Shortbread and Sourdough output is unchanged. See
+  [SMARTMAPS_SCHEMA.md](./SMARTMAPS_SCHEMA.md#booleans-are-always-present-true-or-false).
+- Document running from WSL, where putting `data/` on `/mnt/c` costs more than any tuning
+  flag recovers — Planetiler memory-maps its temp files and that is the access pattern a 9p
+  mount handles worst. See [RUNNING.md](./RUNNING.md#running-from-wsl).
 
 ## v0.4.0
 

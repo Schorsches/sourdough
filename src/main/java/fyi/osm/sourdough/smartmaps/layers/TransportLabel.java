@@ -91,9 +91,7 @@ public class TransportLabel
     setRef(sf, line, ref);
     SmartMapsNames.setNames(sf, line, config.languages());
 
-    if (Booleans.tunnel(sf)) {
-      line.setAttr("tunnel", true);
-    }
+    line.setAttr("tunnel", Booleans.tunnel(sf));
   }
 
   private void processJunction(SourceFeature sf, FeatureCollector fc) {
@@ -109,6 +107,9 @@ public class TransportLabel
       setRefPrefix(point, ref);
     }
     setNetwork(sf, point);
+    // A motorway junction can sit inside a tunnel, and the layer emits its one boolean on
+    // every feature rather than only where true.
+    point.setAttr("tunnel", Booleans.tunnel(sf));
     SmartMapsNames.setNames(sf, point, config.languages());
   }
 

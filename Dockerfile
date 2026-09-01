@@ -43,7 +43,12 @@ WORKDIR /tiles
 # rather than producing an image with an entrypoint pointing at nothing.
 COPY --from=build /build/target/sourdough-builder-HEAD-with-deps.jar /opt/sourdough-builder.jar
 
-# Deliberately no USER. Users bind-mount a host-owned data/ directory, and a non-root uid
-# that does not match the host's fails on the first write into it. Running as root here is
-# what makes the documented mount work for everyone.
+# No USER directive, because no uid is right for every host. A fixed non-root uid fails
+# when it does not match the owner of the bind-mounted data/ directory; root fails
+# differently and less visibly — it writes sources and temp files into that directory as
+# root, and the next build run by an ordinary host user then dies with AccessDeniedException
+# on files it cannot delete. That is not hypothetical, it has happened here.
+#
+# Neither default is safe, so the caller chooses: RUNNING.md documents passing
+# --user "$(id -u):$(id -g)", which makes the container write files the invoking user owns.
 ENTRYPOINT ["java", "-jar", "/opt/sourdough-builder.jar"]

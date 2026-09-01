@@ -75,9 +75,9 @@ public class WaterLines extends SmartMapsLayer implements ForwardingProfile.Laye
     line.setBufferPixels(4);
     line.setSortKey(sortKey(sf));
     line.setAttr("kind", kind);
-    if (tunnel) line.setAttr("tunnel", true);
-    if (bridge) line.setAttr("bridge", true);
-    if (intermittent) line.setAttr("intermittent", true);
+    line.setAttr("tunnel", tunnel);
+    line.setAttr("bridge", bridge);
+    line.setAttr("intermittent", intermittent);
 
     if (sf.getString("name") != null) {
       var label = fc.line(SmartMapsSchema.WATER_LABEL);
@@ -85,8 +85,8 @@ public class WaterLines extends SmartMapsLayer implements ForwardingProfile.Laye
       label.setMinPixelSize(0.25);
       label.setBufferPixels(8);
       label.setAttr("kind", kind);
-      if (tunnel) label.setAttr("tunnel", true);
-      if (bridge) label.setAttr("bridge", true);
+      label.setAttr("tunnel", tunnel);
+      label.setAttr("bridge", bridge);
       SmartMapsNames.setNames(sf, label, config.languages());
     }
   }

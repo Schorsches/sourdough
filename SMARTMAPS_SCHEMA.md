@@ -85,6 +85,35 @@ Only both together say the output is shape-compatible.
 Every one of these is a case where following the document literally would produce a worse
 tileset, or where the document is silent.
 
+### Booleans are always present, true or false
+
+Everywhere else in this repository an attribute is **omitted** rather than set to its
+default, because on a planet-scale tileset a default costs bytes on every feature and tells
+a consumer nothing an absent attribute does not. This layout is the one exception, and only
+for booleans.
+
+Every boolean a layer declares is emitted on every feature in that layer. A permanent lake
+carries `intermittent=false`; it does not simply lack the key. The reason is style
+authoring: with omit-when-false, `["==", ["get", "intermittent"], false]` silently matches
+nothing and only `["!", ["get", "intermittent"]]` works, which is a trap that costs an
+afternoon the first time. Strings and numerics are unchanged — those are absent when the
+underlying OSM tag is absent, which is genuinely different from being false.
+
+Two consequences worth knowing:
+
+- **The zoom-scoped booleans on `transport` stay zoom-scoped.** `link`, `tunnel`, `bridge`,
+  `oneway` and `oneway_reverse` appear from their existing minimum zoom upward; below it
+  neither `true` nor `false` is emitted. Saying `tunnel=false` at z5 about something that
+  *is* a tunnel would be wrong, where saying nothing is merely incomplete — and a falsy
+  test behaves the same against an absent key either way.
+- **A boolean is emitted even where it cannot apply.** `recycling:paper=false` appears on
+  every POI, not only on recycling points, and `atm=false` on every building. That is what
+  "present on every feature" costs, and it is deliberate: the alternative reintroduces
+  exactly the present-or-absent ambiguity this removes.
+
+`SmartMapsConformanceTest.everyDeclaredBooleanIsPresentOnEveryFeature` holds the handlers to
+this, driven off `SmartMapsSchema.booleanAttributes`.
+
 ### The sea is in `water_polygons` as `kind=ocean`
 
 The layout has no ocean layer. Taken literally that drops coastline polygons entirely and

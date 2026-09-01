@@ -123,16 +123,14 @@ public class Poi extends SmartMapsLayer {
     if (sf.hasTag("man_made", "tower")) {
       setIfPresent(sf, point, "tower:type", "tower:type");
     }
-    if ("recycling".equals(amenity)) {
-      for (var attribute : RECYCLING_ATTRIBUTES) {
-        if (sf.hasTag(attribute, "yes")) {
-          point.setAttr(attribute, true);
-        }
-      }
+    // The recycling and atm flags only mean anything on a recycling point or a bank, but
+    // the layer emits every declared boolean on every feature, so elsewhere they are false
+    // rather than absent. See SMARTMAPS_SCHEMA.md for why this layout does that.
+    boolean isRecycling = "recycling".equals(amenity);
+    for (var attribute : RECYCLING_ATTRIBUTES) {
+      point.setAttr(attribute, isRecycling && sf.hasTag(attribute, "yes"));
     }
-    if ("bank".equals(amenity) && sf.hasTag("atm", "yes")) {
-      point.setAttr("atm", true);
-    }
+    point.setAttr("atm", "bank".equals(amenity) && sf.hasTag("atm", "yes"));
   }
 
   private static void setIfPresent(
